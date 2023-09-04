@@ -22,7 +22,7 @@ if(!roomId){
 
 let displayName = sessionStorage.getItem('display_name')
 if(!displayName){
-    window.location = 'lobby.html'
+    window.location = 'index.html'
 }
 
 let localTracks = []
@@ -45,7 +45,7 @@ let joinRoomInit = async () => {
     channel.on('ChannelMessage', handleChannelMessage)
 
     getMembers()
-    addBotMessageToDom(`Welcome to the room ${displayName}! 👋`)
+    addBotMessageToDom(`Welcome to the room ${displayName}!`)
 
     client = AgoraRTC.createClient({mode:'rtc', codec:'vp8'})
     await client.join(APP_ID, roomId, token, uid)
@@ -58,10 +58,7 @@ let joinStream = async () => {
     document.getElementById('join-btn').style.display = 'none'
     document.getElementsByClassName('stream__actions')[0].style.display = 'flex'
 
-    localTracks = await AgoraRTC.createMicrophoneAndCameraTracks({}, {encoderConfig:{
-        width:{min:640, ideal:1920, max:1920},
-        height:{min:480, ideal:1080, max:1080}
-    }})
+    localTracks = await AgoraRTC.createMicrophoneAndCameraTracks()
 
 
     let player = `<div class="video__container" id="user-container-${uid}">
@@ -104,7 +101,7 @@ let handleUserPublished = async (user, mediaType) => {
 
         document.getElementById('streams__container').insertAdjacentHTML('beforeend', player)
         document.getElementById(`user-container-${user.uid}`).addEventListener('click', expandVideoFrame)
-   
+
     }
 
     if(displayFrame.style.display){
@@ -132,7 +129,7 @@ let handleUserLeft = async (user) => {
 
     if(userIdInDisplayFrame === `user-container-${user.uid}`){
         displayFrame.style.display = null
-        
+
         let videoFrames = document.getElementsByClassName('video__container')
 
         for(let i = 0; videoFrames.length > i; i++){
@@ -198,10 +195,10 @@ let toggleScreen = async (e) => {
         let videoFrames = document.getElementsByClassName('video__container')
         for(let i = 0; videoFrames.length > i; i++){
             if(videoFrames[i].id != userIdInDisplayFrame){
-              videoFrames[i].style.height = '100px'
-              videoFrames[i].style.width = '100px'
+                videoFrames[i].style.height = '100px'
+                videoFrames[i].style.width = '100px'
             }
-          }
+        }
 
 
     }else{

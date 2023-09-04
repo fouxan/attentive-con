@@ -25,7 +25,7 @@ let updateMemberTotal = async (members) => {
     let total = document.getElementById('members__count')
     total.innerText = members.length
 }
- 
+
 let handleMemberLeft = async (MemberId) => {
     removeMemberFromDom(MemberId)
 
@@ -37,7 +37,6 @@ let removeMemberFromDom = async (MemberId) => {
     let memberWrapper = document.getElementById(`member__${MemberId}__wrapper`)
     let name = memberWrapper.getElementsByClassName('member_name')[0].textContent
     addBotMessageToDom(`${name} has left the room.`)
-        
     memberWrapper.remove()
 }
 
@@ -62,7 +61,6 @@ let handleChannelMessage = async (messageData, MemberId) => {
 
         if(userIdInDisplayFrame === `user-container-${uid}`){
             displayFrame.style.display = null
-    
             for(let i = 0; videoFrames.length > i; i++){
                 videoFrames[i].style.height = '300px'
                 videoFrames[i].style.width = '300px'
@@ -104,7 +102,7 @@ let addBotMessageToDom = (botMessage) => {
 
     let newMessage = `<div class="message__wrapper">
                         <div class="message__body__bot">
-                            <strong class="message__author__bot">🤖 Mumble Bot</strong>
+                            <strong class="message__author__bot">Chat Bot</strong>
                             <p class="message__text__bot">${botMessage}</p>
                         </div>
                     </div>`

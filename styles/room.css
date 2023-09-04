@@ -67,7 +67,7 @@
   height: 8px;
   width: 8px;
   border-radius: 50%;
-  background-color: #2aca3e;
+  background-color: #8bc192;
 }
 
 .member_name{
@@ -124,7 +124,7 @@
 
 .message__author {
   margin-right: 10px;
-  color: #81cc8b!important;
+  color: #8bc192!important;
 
 }
 
