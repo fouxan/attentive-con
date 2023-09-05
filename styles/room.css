@@ -11,57 +11,6 @@
   gap: 3rem;
 }
 
-#members__container {
-  background-color: #000000;
-  border-right: 1px solid #797a79;
-  overflow-y: auto;
-  width: 90%;
-  max-width: 250px;
-  position: fixed;
-  height: 100%;
-  z-index: 999;
-}
-
-#members__count {
-  background-color: #000000;
-  color: #ffffff;
-  padding: 7px 15px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 5px;
-}
-
-#members__header {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 0 1rem;
-  position: absolute;
-  font-size: 18px;
-  background-color: #ffffff;
-  color: #000000;
-  width: 218px;
-}
-
-#member__list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding-top: 5rem;
-  padding-bottom: 6.5rem;
-}
-
-.members__list::-webkit-scrollbar {
-  height: 14px;
-}
-
-.member__wrapper {
-  display: flex;
-  align-items: center;
-  column-gap: 10px;
-  padding-left: 1em;
-}
-
 .green__icon {
   display: block;
   height: 8px;
@@ -70,20 +19,16 @@
   background-color: #8bc192;
 }
 
-.member_name{
-  font-size: 14px;
-  line-height: 0;
-}
 
 #messages__container {
   height: calc(100vh - 85px);
-  background-color: #000000;
+  background-color: #676767;
   right: 0;
   position: absolute;
   width: 100%;
   max-width: 25rem;
   overflow-y: auto;
-  border-left: 1px solid #111;
+  /* border-left: 1px solid #111; */
 }
 
 #messages {
@@ -124,13 +69,13 @@
 
 .message__author {
   margin-right: 10px;
-  color: #8bc192!important;
+  color: #97a5ea!important;
 
 }
 
 .message__author__bot {
   margin-right: 10px;
-  color: #cbb1d3!important;
+  color: #ff0000!important;
 }
 
 .message__text {
@@ -169,29 +114,10 @@
   justify-self: center;
   width: calc(100% - 40.7rem);
   position: fixed;
-  left: 15.7rem;
+  left: 10rem;
   top: clac(100vh - 72px);
   overflow-y: auto;
   height: 100%;
-}
-
-#stream__box{
-  background-color: #3f434a;
-  height: 60vh;
-  display: none;
-}
-
-#stream__box .video__container{
-  border: 2px solid #000;
-  border-radius: 0;
-  height: 100%!important;
-  width:100%!important;
-
-  background-size: 300px;
-}
-
-#stream__box video{
-  border-radius: 0;
 }
 
 #streams__container{
@@ -209,14 +135,10 @@
   justify-content: center;
   align-items: center;
   border:2px solid #ffffff;
-  cursor: pointer;
+  border-radius: 10px;
   overflow: hidden;
-  height: 300px;
-  width: 400px;
-  background-image: url("/images/logo.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 75px;
+  height: 400px;
+  width: 550px;
 }
 
 .video-player{
@@ -232,13 +154,6 @@
 }
 
 @media (max-width: 1200px) {
-  #members__container {
-    display: none;
-  }
-
-  #members__button {
-    display: block;
-  }
 
   #stream__container {
     width: calc(100% - 25rem);
@@ -279,10 +194,6 @@
   }
 }
 
-#stream__box {
-  position: relative;
-}
-
 .stream__focus {
   width: 100%;
   height: 100%;
@@ -309,7 +220,7 @@
 .stream__actions button {
   cursor: pointer;
   background-color: #262625;
-  color: #fff;
+  color: #ffffff;
   border: none;
   display: flex;
   align-items: center;
@@ -330,7 +241,7 @@
 .stream__actions button.active,
 .stream__actions a:hover,
 .stream__actions button:hover {
-  background-color: #845695;
+  background-color: #a54040;
 }
 
 #join-btn{
