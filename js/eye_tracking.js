@@ -1,9 +1,5 @@
-const isHost = sessionStorage.getItem("is_host");
-
-function shiftFocus(user) {
+function shiftFocus(container) {
     if(confirm("Do you want to switch focus?")){
-        let userElement = document.getElementById(user);
-        const uid = userElement.slice(5);
         for(const stream of remoteStreams) {
             const audioTrack = stream.getAudioTrack();
             if (stream.getId() === uid){
@@ -29,37 +25,35 @@ function isLookingAtElement(gazeData, element) {
     );
 }
 
-if(isHost === "true"){
-    window.saveDataAcrossSessions = true;
-    let messageContainer = document.getElementById("messages__container");
+// Function to attach gaze tracking logic to a video container
+function attachGazeTracking(container) {
     let gazeStartTime = null;
 
-    webgazer.setGazeListener((data, elapsedTime) => {
-        if (data == null){
+    webgazer.setGazeListener(function(data, elapsedTime) {
+        if (data == null) {
+            // User is not looking at the screen
             gazeStartTime = null;
             return;
         }
 
-        if (isLookingAtElement(data, messageContainer)) {
+        // Check if the user is looking at the video container
+        if (isLookingAtElement(data, container)) {
             if (gazeStartTime === null) {
+                // User has just started looking at the element
                 gazeStartTime = new Date().getTime();
             } else {
+                // Calculate the time spent looking at the element
                 const gazeDuration = new Date().getTime() - gazeStartTime;
+
+                // Check if the user has looked at the element for the desired duration (e.g., 1000 milliseconds)
                 if (gazeDuration >= 1000) {
-                    messageContainer.style.backgroundColor = "black";
-                    console.log("Changed the color of message container.");
+                    // Change the borderColor of the video container
+                    shiftFocus(container); // Change to your desired style
                 }
             }
         } else {
+            // User is not looking at the video container
             gazeStartTime = null;
         }
-        // if (elapsedTime > THRESHOLD_TIME) {
-        //     console.log("switching focus");
-        //     setTimeout(() => {
-        //         lookingAt = document.elementFromPoint(data.x, data.y).id;
-        //         console.log(lookingAt);
-        //         shiftFocus(lookingAt);
-        //     }, 200);
-        // }
     }).begin();
 }

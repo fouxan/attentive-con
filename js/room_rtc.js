@@ -5,6 +5,7 @@ if(!uid){
     uid = String(Math.floor(Math.random() * 10000))
     sessionStorage.setItem('uid', uid)
 }
+let isHost = sessionStorage.getItem("is_host") === "true";
 
 let token = null;
 let client;
@@ -65,6 +66,10 @@ let joinStream = async () => {
 
     localTracks[1].play(`user-${uid}`)
     await client.publish([localTracks[0], localTracks[1]])
+    if(isHost){
+        videoContainer = document.getElementById(`user-container-${uid}`)
+        attachGazeTracking(videoContainer);
+    }
 }
 
 let switchToCamera = async () => {
@@ -94,6 +99,10 @@ let handleUserPublished = async (user, mediaType) => {
             </div>`
 
         document.getElementById('streams__container').insertAdjacentHTML('beforeend', player)
+        if(isHost){
+            videoContainer = document.getElementById(`user-container-${user.uid}`)
+            attachGazeTracking(videoContainer);
+        }
     }
 
     if(mediaType === 'video'){
