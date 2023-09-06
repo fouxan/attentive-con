@@ -9,18 +9,6 @@ let handleMemberJoined = async (MemberId) => {
     addBotMessageToDom(`Welcome to the room ${name}! 👋`)
 }
 
-let addMemberToDom = async (MemberId) => {
-    let {name} = await rtmClient.getUserAttributesByKeys(MemberId, ['name'])
-
-    let membersWrapper = document.getElementById('member__list')
-    let memberItem = `<div class="member__wrapper" id="member__${MemberId}__wrapper">
-                        <span class="green__icon"></span>
-                        <p class="member_name">${name}</p>
-                    </div>`
-
-    membersWrapper.insertAdjacentHTML('beforeend', memberItem)
-}
-
 let updateMemberTotal = async (members) => {
     let total = document.getElementById('members__count')
     total.innerText = members.length

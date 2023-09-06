@@ -1,14 +1,28 @@
 const isHost = sessionStorage.getItem("is_host");
+
+function shiftFocus(user) {
+    if(confirm("Do you want to switch focus?")){
+        let userElement = document.getElementById(user);
+        const uid = userElement.slice(5);
+        for(const stream of remoteStreams) {
+            const audioTrack = stream.getAudioTrack();
+            if (stream.getId() === uid){
+                userElement.style.borderColor = "red";
+                audioTrack.adjustUserPlaybackSignalVolume(uid, 100);
+            }else{
+                audioTrack.adjustUserPlaybackSignalVolume(uid, 50);
+            }
+        }
+    }
+}
+
 if(isHost === "true"){
     window.saveDataAcrossSessions = true;
 
     const THRESHOLD_TIME = 1000; // 1 second
-    const LEFT_CUTOFF = window.innerWidth / 4;
-    const RIGHT_CUTOFF = window.innerWidth - window.innerWidth / 4;
 
     let startLookTime = Number.POSITIVE_INFINITY;
     let lookDirection = null;
-    let videoElement;
     let lookingAt;
 
     webgazer.setGazeListener((data, timestamp) => {
@@ -27,21 +41,4 @@ if(isHost === "true"){
             }, 200);
         }
     }).begin();
-
-    function shiftFocus(user) {
-        if(confirm("Do you want to switch focus?")){
-            let userElement = document.getElementById(user);
-            const uid = userElement.slice(5);
-            const remoteStreams = client.remoteStreams;
-            for(const stream of remoteStreams) {
-                const audioTrack = stream.getAudioTrack();
-                if (stream.getId() === uid){
-                    userElement.style.borderColor = "red";
-                    audioTrack.setVolume(1.0);
-                }else{
-                    audioTrack.setVolume(0.5);
-                }
-            }
-        }
-    }
 }
