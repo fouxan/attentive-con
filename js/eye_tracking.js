@@ -1,70 +1,64 @@
-function shiftFocus(container) {
-    const border_color = window.getComputedStyle(container).getPropertyValue("border-color");
-    if (border_color === "white") {
-        if(confirm("Do you want to switch focus?")){
-            let videoPlayers = document.getElementsByClassName("video__container");
-            for(const videoPlayer in videoPlayers){
-                if(videoPlayer.id === container.id){
-                    container.style.borderColor = "green";
-                }else{
-                    container.style.borderColor = "white";
-                }
-            }
-            // for(const stream of remoteStreams) {
-            //     const audioTrack = stream.getAudioTrack();
-            //     if (stream.getId() === uid){
-            //         audioTrack.adjustUserPlaybackSignalVolume(uid, 100);
-            //     }else{
-            //         container.style.borderColor = "white";
-            //         audioTrack.adjustUserPlaybackSignalVolume(uid, 50);
-            //     }
-            // }
-        }
-    }
+function sendShiftFocusMessage(container) {
+  let idParts = container.id.split("-");
+  let uid = containerId[idParts.length - 1];
+
+  channel.sendMessage({
+    text: JSON.stringify({ type: "switch_focus", uid: uid }),
+  });
 }
 
 function isLookingAtElement(gazeData, element) {
-    const elementRect = element.getBoundingClientRect();
-    const gazeX = gazeData.x;
-    const gazeY = gazeData.y;
+  const elementRect = element.getBoundingClientRect();
+  const gazeX = gazeData.x;
+  const gazeY = gazeData.y;
 
-    return (
-        gazeX >= elementRect.left &&
-        gazeX <= elementRect.right &&
-        gazeY >= elementRect.top &&
-        gazeY <= elementRect.bottom
-    );
+  return (
+    gazeX >= elementRect.left - 20 &&
+    gazeX <= elementRect.right + 20 &&
+    gazeY >= elementRect.top - 20 &&
+    gazeY <= elementRect.bottom + 20
+  );
 }
 
-// Function to attach gaze tracking logic to a video container
 function attachGazeTracking(container) {
-    let gazeStartTime = null;
+  let gazeStartTime = null;
 
-    webgazer.setGazeListener(function(data, elapsedTime) {
-        if (data == null) {
-            // User is not looking at the screen
-            gazeStartTime = null;
-            return;
-        }
+  webgazer
+    .setGazeListener(function (data, elapsedTime) {
+      if (data == null) {
+        gazeStartTime = null;
+        return;
+      }
 
-        // Check if the user is looking at the video container
-        if (isLookingAtElement(data, container)) {
-            if (gazeStartTime === null) {
-                // User has just started looking at the element
-                gazeStartTime = new Date().getTime();
-            } else {
-                // Calculate the time spent looking at the element
-                const gazeDuration = new Date().getTime() - gazeStartTime;
-
-                // Check if the user has looked at the element for the desired duration (e.g., 1000 milliseconds)
-                if (gazeDuration >= 1000) {
-                    // Change the borderColor of the video container
-                    shiftFocus(container); // Change to your desired style
-                }
-            }
+      if (isLookingAtElement(data, container)) {
+        if (gazeStartTime === null) {
+          gazeStartTime = new Date().getTime();
         } else {
-            // User is not looking at the video container
-            gazeStartTime = null;
+          const gazeDuration = new Date().getTime() - gazeStartTime;
+
+          if (gazeDuration >= 1000) {
+            const border_color = window
+              .getComputedStyle(container)
+              .getPropertyValue("border-color");
+            if (border_color === "white") {
+              if (confirm("Do you want to switch focus?")) {
+                sendShiftFocusMessage(container);
+                // for(const stream of remoteStreams) {
+                //     const audioTrack = stream.getAudioTrack();
+                //     if (stream.getId() === uid){
+                //         audioTrack.adjustUserPlaybackSignalVolume(uid, 100);
+                //     }else{
+                //         container.style.borderColor = "white";
+                //         audioTrack.adjustUserPlaybackSignalVolume(uid, 50);
+                //     }
+                // }
+              }
+            }
+          }
         }
-    }).begin();
+      } else {
+        gazeStartTime = null;
+      }
+    })
+    .begin();
 }

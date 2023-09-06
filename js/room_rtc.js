@@ -6,6 +6,10 @@ if(!uid){
     sessionStorage.setItem('uid', uid)
 }
 let isHost = sessionStorage.getItem("is_host") === "true";
+let hostUID;
+if(isHost){
+    hostUID = uid;
+}
 
 let token = null;
 let client;
@@ -38,8 +42,6 @@ let joinRoomInit = async () => {
     channel = await rtmClient.createChannel(roomId)
     await channel.join()
 
-    channel.on('MemberJoined', handleMemberJoined)
-    channel.on('MemberLeft', handleMemberLeft)
     channel.on('ChannelMessage', handleChannelMessage)
 
     client = AgoraRTC.createClient({mode:'rtc', codec:'vp8'})
@@ -47,14 +49,6 @@ let joinRoomInit = async () => {
 
     client.on('user-published', handleUserPublished)
     client.on('user-left', handleUserLeft)
-    // client.on('channelMessage', (message) => {
-    //     const { uid: senderUid, text } = message;
-
-    //     // Check if the message is a color change request
-    //     if (text === 'changeColor') {
-    //         switchFocus()
-    //     }
-    // });
 }
 
 let joinStream = async () => {
@@ -156,11 +150,39 @@ let leaveStream = async (e) => {
     channel.sendMessage({text:JSON.stringify({'type':'user_left', 'uid':uid})})
 }
 
+function handleChannelMessage(messageData, MemberId){
+    console.log('A new message was received')
+    let data = JSON.parse(messageData.text)
+
+    if(data.type === 'user_left'){
+        document.getElementById(`user-container-${data.uid}`).remove()
+    }
+
+    if(data.type === 'switch_focus'){
+        switchFocus(data.uid)
+    }
+}
+
+let leaveChannel = async () => {
+    await channel.leave()
+    await rtmClient.logout()
+}
+
+function switchFocus(uid){
+    let videoContainers = document.getElementsByClassName("video_container");
+    for(const videoContainer in videoContainers){
+        if(videoContainer.id === `user-container-${uid}` || videoContainer.id === `user-container-${hostUID}`){
+            videoContainer.style.borderColor = "green"
+        }else{
+            videoContainer.style.borderColor = "white"
+        }
+    }
+}
 
 document.getElementById('camera-btn').addEventListener('click', toggleCamera)
 document.getElementById('mic-btn').addEventListener('click', toggleMic)
 document.getElementById('join-btn').addEventListener('click', joinStream)
 document.getElementById('leave-btn').addEventListener('click', leaveStream)
-
+window.addEventListener('beforeunload', leaveChannel)
 
 joinRoomInit()
