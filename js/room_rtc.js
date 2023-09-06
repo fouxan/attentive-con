@@ -42,14 +42,19 @@ let joinRoomInit = async () => {
     channel.on('MemberLeft', handleMemberLeft)
     channel.on('ChannelMessage', handleChannelMessage)
 
-    getMembers()
-    addBotMessageToDom(`Welcome to the room ${displayName}!`)
-
     client = AgoraRTC.createClient({mode:'rtc', codec:'vp8'})
     await client.join(APP_ID, roomId, token, uid)
 
     client.on('user-published', handleUserPublished)
     client.on('user-left', handleUserLeft)
+    // client.on('channelMessage', (message) => {
+    //     const { uid: senderUid, text } = message;
+
+    //     // Check if the message is a color change request
+    //     if (text === 'changeColor') {
+    //         switchFocus()
+    //     }
+    // });
 }
 
 let joinStream = async () => {
@@ -68,23 +73,9 @@ let joinStream = async () => {
     await client.publish([localTracks[0], localTracks[1]])
     if(isHost){
         videoContainer = document.getElementById(`user-container-${uid}`)
+        videoContainer.style.borderColor = "green";
         attachGazeTracking(videoContainer);
     }
-}
-
-let switchToCamera = async () => {
-    let player = `<div class="video__container" id="user-container-${uid}">
-                    <div class="video-player" id="user-${uid}"></div>
-                </div>`
-    displayFrame.insertAdjacentHTML('beforeend', player)
-
-    await localTracks[0].setMuted(true)
-    await localTracks[1].setMuted(true)
-
-    document.getElementById('mic-btn').classList.remove('active')
-
-    localTracks[1].play(`user-${uid}`)
-    await client.publish([localTracks[1]])
 }
 
 let handleUserPublished = async (user, mediaType) => {

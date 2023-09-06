@@ -1,13 +1,24 @@
 function shiftFocus(container) {
-    if(confirm("Do you want to switch focus?")){
-        for(const stream of remoteStreams) {
-            const audioTrack = stream.getAudioTrack();
-            if (stream.getId() === uid){
-                userElement.style.borderColor = "red";
-                audioTrack.adjustUserPlaybackSignalVolume(uid, 100);
-            }else{
-                audioTrack.adjustUserPlaybackSignalVolume(uid, 50);
+    const border_color = window.getComputedStyle(container).getPropertyValue("border-color");
+    if (border_color === "white") {
+        if(confirm("Do you want to switch focus?")){
+            let videoPlayers = document.getElementsByClassName("video__container");
+            for(const videoPlayer in videoPlayers){
+                if(videoPlayer.id === container.id){
+                    container.style.borderColor = "green";
+                }else{
+                    container.style.borderColor = "white";
+                }
             }
+            // for(const stream of remoteStreams) {
+            //     const audioTrack = stream.getAudioTrack();
+            //     if (stream.getId() === uid){
+            //         audioTrack.adjustUserPlaybackSignalVolume(uid, 100);
+            //     }else{
+            //         container.style.borderColor = "white";
+            //         audioTrack.adjustUserPlaybackSignalVolume(uid, 50);
+            //     }
+            // }
         }
     }
 }
