@@ -16,29 +16,50 @@ function shiftFocus(user) {
     }
 }
 
+function isLookingAtElement(gazeData, element) {
+    const elementRect = element.getBoundingClientRect();
+    const gazeX = gazeData.x;
+    const gazeY = gazeData.y;
+
+    return (
+        gazeX >= elementRect.left &&
+        gazeX <= elementRect.right &&
+        gazeY >= elementRect.top &&
+        gazeY <= elementRect.bottom
+    );
+}
+
 if(isHost === "true"){
     window.saveDataAcrossSessions = true;
+    let messageContainer = document.getElementById("messages__container");
+    let gazeStartTime = null;
 
-    const THRESHOLD_TIME = 1000; // 1 second
-
-    let startLookTime = Number.POSITIVE_INFINITY;
-    let lookDirection = null;
-    let lookingAt;
-
-    webgazer.setGazeListener((data, timestamp) => {
-        if (data == null || lookDirection === "STOP") return;
-        startLookTime = timestamp;
-
-        if (startLookTime + THRESHOLD_TIME < timestamp) {
-            startLookTime = Number.POSITIVE_INFINITY;
-            lookDirection = "STOP";
-            console.log("switching focus");
-            setTimeout(() => {
-                lookingAt = document.elementFromPoint(data.x, data.y).id;
-                console.log(lookingAt);
-                shiftFocus(lookingAt);
-                lookDirection = "RESET";
-            }, 200);
+    webgazer.setGazeListener((data, elapsedTime) => {
+        if (data == null){
+            gazeStartTime = null;
+            return;
         }
+
+        if (isLookingAtElement(data, messageContainer)) {
+            if (gazeStartTime === null) {
+                gazeStartTime = new Date().getTime();
+            } else {
+                const gazeDuration = new Date().getTime() - gazeStartTime;
+                if (gazeDuration >= 1000) {
+                    messageContainer.style.backgroundColor = "black";
+                    console.log("Changed the color of message container.");
+                }
+            }
+        } else {
+            gazeStartTime = null;
+        }
+        // if (elapsedTime > THRESHOLD_TIME) {
+        //     console.log("switching focus");
+        //     setTimeout(() => {
+        //         lookingAt = document.elementFromPoint(data.x, data.y).id;
+        //         console.log(lookingAt);
+        //         shiftFocus(lookingAt);
+        //     }, 200);
+        // }
     }).begin();
 }

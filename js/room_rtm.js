@@ -9,11 +9,6 @@ let handleMemberJoined = async (MemberId) => {
     addBotMessageToDom(`Welcome to the room ${name}! 👋`)
 }
 
-let updateMemberTotal = async (members) => {
-    let total = document.getElementById('members__count')
-    total.innerText = members.length
-}
-
 let handleMemberLeft = async (MemberId) => {
     removeMemberFromDom(MemberId)
 
