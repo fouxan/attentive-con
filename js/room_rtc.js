@@ -8,7 +8,11 @@ if(!uid){
 let isHost = sessionStorage.getItem("is_host") === "true";
 let hostUID;
 if(isHost){
-    hostUID = uid;
+    hostUID = "1";
+    uid = "1";
+    sessionStorage.setItem("uid", hostUID)
+}else{
+    hostUID = "1";
 }
 
 let token = null;
@@ -65,10 +69,13 @@ let joinStream = async () => {
 
     localTracks[1].play(`user-${uid}`)
     await client.publish([localTracks[0], localTracks[1]])
+    channel.sendMessage({
+        text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
+    });
     if(isHost){
         videoContainer = document.getElementById(`user-container-${uid}`)
-        videoContainer.style.borderColor = "green";
-        attachGazeTracking(videoContainer);
+        videoContainer.style.borderColor = "green"
+        attachGazeTracking(videoContainer, channel);
     }
 }
 
@@ -84,10 +91,13 @@ let handleUserPublished = async (user, mediaType) => {
             </div>`
 
         document.getElementById('streams__container').insertAdjacentHTML('beforeend', player)
-        if(isHost){
-            videoContainer = document.getElementById(`user-container-${user.uid}`)
-            attachGazeTracking(videoContainer);
-        }
+    }
+    channel.sendMessage({
+        text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
+    });
+    if(isHost){
+        videoContainer = document.getElementById(`user-container-${user.uid}`)
+        attachGazeTracking(videoContainer, channel);
     }
 
     if(mediaType === 'video'){
@@ -151,32 +161,35 @@ let leaveStream = async (e) => {
 }
 
 function handleChannelMessage(messageData, MemberId){
-    console.log('A new message was received')
     let data = JSON.parse(messageData.text)
-
+    console.log(`A new message was received ${data.type}`)
     if(data.type === 'user_left'){
         document.getElementById(`user-container-${data.uid}`).remove()
     }
 
     if(data.type === 'switch_focus'){
-        switchFocus(data.uid)
+        let videoContainers = document.getElementsByClassName("video_container");
+        for(const videoContainer in videoContainers){
+            let videoPlayer = videoContainer.children[0];
+            if(videoContainer.id === `user-container-${data.uid}` || videoContainer.id === `user-container-${hostUID}`){
+                videoContainer.style.borderColor = "green"
+                videoPlayer.volume = 1.0
+            }else{
+                videoContainer.style.borderColor = "white"
+                videoPlayer.volume = 0.5
+            }
+        }
+    }
+
+    if(data.type === 'distinguish_host'){
+        let hostVideoContainer = document.getElementById(`user-container-${hostUID}`);
+        hostVideoContainer.style.borderColor = "green";
     }
 }
 
 let leaveChannel = async () => {
     await channel.leave()
     await rtmClient.logout()
-}
-
-function switchFocus(uid){
-    let videoContainers = document.getElementsByClassName("video_container");
-    for(const videoContainer in videoContainers){
-        if(videoContainer.id === `user-container-${uid}` || videoContainer.id === `user-container-${hostUID}`){
-            videoContainer.style.borderColor = "green"
-        }else{
-            videoContainer.style.borderColor = "white"
-        }
-    }
 }
 
 document.getElementById('camera-btn').addEventListener('click', toggleCamera)
