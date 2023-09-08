@@ -1,25 +1,22 @@
 const APP_ID = "af633987e6be495aafe799b3d6daca51"
 
-let uid = sessionStorage.getItem('uid')
-if(!uid){
-    uid = String(Math.floor(Math.random() * 10000))
-    sessionStorage.setItem('uid', uid)
-}
-let isHost = sessionStorage.getItem("is_host") === "true";
-let hostUID;
-if(isHost){
-    hostUID = "1";
-    uid = "1";
-    sessionStorage.setItem("uid", hostUID)
-}else{
-    hostUID = "1";
-}
-
 let token = null;
 let client;
 
 let rtmClient;
 let channel;
+
+let uid = sessionStorage.getItem('uid')
+if(!uid){
+    uid = String(Math.floor(Math.random() * 10000))
+    sessionStorage.setItem('uid', uid)
+}
+hostUID = "1";
+isHost = sessionStorage.getItem("is_host") == 'true';
+if(isHost){
+    uid = hostUID;
+    sessionStorage.setItem("uid", hostUID)
+}
 
 const queryString = window.location.search
 const urlParams = new URLSearchParams(queryString)
@@ -69,13 +66,13 @@ let joinStream = async () => {
 
     localTracks[1].play(`user-${uid}`)
     await client.publish([localTracks[0], localTracks[1]])
-    channel.sendMessage({
-        text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
-    });
-    if(isHost){
-        videoContainer = document.getElementById(`user-container-${uid}`)
-        videoContainer.style.borderColor = "green"
-        attachGazeTracking(videoContainer, channel);
+
+    if(isHost || hostExists()){
+        videoContainer = document.getElementById(`user-container-${hostUID}`)
+        videoContainer.style.borderColor = "green";
+        channel.sendMessage({
+            text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
+        });
     }
 }
 
@@ -92,13 +89,6 @@ let handleUserPublished = async (user, mediaType) => {
 
         document.getElementById('streams__container').insertAdjacentHTML('beforeend', player)
     }
-    channel.sendMessage({
-        text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
-    });
-    if(isHost){
-        videoContainer = document.getElementById(`user-container-${user.uid}`)
-        attachGazeTracking(videoContainer, channel);
-    }
 
     if(mediaType === 'video'){
         user.videoTrack.play(`user-${user.uid}`)
@@ -107,7 +97,13 @@ let handleUserPublished = async (user, mediaType) => {
     if(mediaType === 'audio'){
         user.audioTrack.play()
     }
-
+    if(isHost || hostExists()){
+        videoContainer = document.getElementById(`user-container-${hostUID}`)
+        videoContainer.style.borderColor = "green";
+        channel.sendMessage({
+            text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
+        });
+    }
 }
 
 let handleUserLeft = async (user) => {
@@ -168,23 +164,37 @@ function handleChannelMessage(messageData, MemberId){
     }
 
     if(data.type === 'switch_focus'){
-        let videoContainers = document.getElementsByClassName("video_container");
-        for(const videoContainer in videoContainers){
-            let videoPlayer = videoContainer.children[0];
-            if(videoContainer.id === `user-container-${data.uid}` || videoContainer.id === `user-container-${hostUID}`){
-                videoContainer.style.borderColor = "green"
-                videoPlayer.volume = 1.0
-            }else{
-                videoContainer.style.borderColor = "white"
-                videoPlayer.volume = 0.5
+        setTimeout(() => {
+            let videoContainers = document.getElementsByClassName("video__container");
+            for(const videoContainer of videoContainers){
+                let videoPlayer = videoContainer.getElementsByTagName("video")[0];
+                if(videoContainer.id === `user-container-${data.uid}` || videoContainer.id === `user-container-${hostUID}`){
+                    if(videoContainer.id === `user-container-${data.uid}`){
+                        console.log("Changed border color of host.")
+                    }else{
+                        console.log("Changed border color of user.")
+                    }
+                    videoContainer.style.borderColor = "green"
+                    videoPlayer.volume = 1.0
+                }else{
+                    videoContainer.style.borderColor = "white"
+                    videoPlayer.volume = 0
+                }
             }
-        }
+        }, 300);
+        channel.sendMessage({
+            text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
+        });
     }
 
     if(data.type === 'distinguish_host'){
         let hostVideoContainer = document.getElementById(`user-container-${hostUID}`);
         hostVideoContainer.style.borderColor = "green";
     }
+}
+
+function hostExists(){
+    return document.getElementById(`user-${hostUID}`) !== null;
 }
 
 let leaveChannel = async () => {

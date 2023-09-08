@@ -23,7 +23,7 @@
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: #845695;
+  background: #cf697a;
 }
 
 body {
@@ -39,20 +39,6 @@ body {
 p,
 a {
   font-weight: 300;
-}
-
-.avatar__md {
-  height: 40px;
-  width: 40px;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.avatar__sm {
-  height: 30px;
-  width: 30px;
-  object-fit: cover;
-  border-radius: 50%;
 }
 
 #nav {
@@ -134,20 +120,6 @@ a {
   display: flex;
   gap: 2em;
   align-items: center;
-}
-
-#members__button,
-#chat__button {
-  display: none;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-}
-
-#members__button:hover svg > path,
-#chat__button:hover svg,
-.nav__link:hover svg {
-  fill: #000000;
 }
 
 .nav__link svg {

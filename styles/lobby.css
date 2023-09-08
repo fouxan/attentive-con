@@ -77,22 +77,3 @@
   fill: #000000;
   width: 20px;
 }
-
-/* #avatar__selection {
-  margin-height: 10px;
-  display: flex;
-  gap: 1em;
-}
-
-.avatar__option {
-  height: 50px;
-  width: 50px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: 0.3s;
-  border: 2px solid #797a79;
-}
-
-.avatar__option__selected {
-  border: 3px solid #845695;
-} */

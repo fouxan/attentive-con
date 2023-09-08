@@ -121,9 +121,7 @@
 }
 
 .stream__actions a.active,
-.stream__actions button.active,
-.stream__actions a:hover,
-.stream__actions button:hover {
+.stream__actions button.active{
   background-color: #6e5151;
 }
 

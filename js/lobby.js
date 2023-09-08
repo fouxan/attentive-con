@@ -1,7 +1,5 @@
 let form = document.getElementById('lobby__form')
-let isHostTrueRadio = document.getElementById("is_host_true")
-let isHostFalseRadio = document.getElementById("is_host_false")
-
+let isHostTrue = document.getElementById("is_host_true")
 
 let displayName = sessionStorage.getItem('display_name')
 if(displayName){
@@ -12,7 +10,7 @@ form.addEventListener('submit', (e) => {
     e.preventDefault()
 
     sessionStorage.setItem('display_name', e.target.name.value)
-    if(isHostTrueRadio.checked){
+    if(isHostTrue.checked){
         sessionStorage.setItem("is_host", "true")
     }else{
         sessionStorage.setItem("is_host", "false")
@@ -22,5 +20,5 @@ form.addEventListener('submit', (e) => {
     if(!inviteCode){
         inviteCode = String(Math.floor(Math.random() * 10000))
     }
-    window.location = `room.html?room=${inviteCode}&host=${isHostTrueRadio.checked}`
+    window.location = `room.html?room=${inviteCode}&host=${isHostTrue.checked}`
 })
