@@ -175,10 +175,10 @@ function handleChannelMessage(messageData, MemberId){
                         console.log("Changed border color of user.")
                     }
                     videoContainer.style.borderColor = "green"
-                    videoPlayer.volume = 1.0
+                    videoPlayer.muted = false;
                 }else{
                     videoContainer.style.borderColor = "white"
-                    videoPlayer.volume = 0
+                    videoPlayer.muted = true;
                 }
             }
         }, 300);
