@@ -93,6 +93,8 @@ if(isHost){
 
         }
     }).begin();
+
+    webgazer.showVideoPreview(false).showPredictionPoints(false);
 }
 
 
