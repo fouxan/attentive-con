@@ -1,11 +1,11 @@
+const HOST_UID = "1";
+const THRESHOLD_TIME = 1000;
+const RESET_DELAY = 500;
+const COOLDOWN = 10000;
 let isHost = sessionStorage.getItem("is_host") == 'true';
 let gazeStartTime = null;
 let resetGazeTimeout = null;
 let lastSwitchTime = null;
-const hostUID = "1";
-const THRESHOLD_TIME = 1000;
-const RESET_DELAY = 500;
-const COOLDOWN = 10000;
 
 function sendShiftFocusMessage(container, channel) {
     let uid = container.id.split("-")[2];
@@ -52,22 +52,25 @@ if(isHost){
                     const gazeDuration = new Date().getTime() - gazeStartTime;
                     console.log(`gazeStartTime not null. gazeDuration: ${gazeDuration}`,)
                     if (gazeDuration >= THRESHOLD_TIME) {
-                        console.log(`Host looked at ${container.id} for a second. proceeding with shift focus logic.`);
-                        const border_color = window
-                        .getComputedStyle(container)
-                        .getPropertyValue("border-color");
-                        console.log(border_color);
-                        if (border_color !== "rgb(0,128,0)" && container.id !== `user-container-${hostUID}`){
+                        console.log("A second has passed.")
+                        if (!container.classList.contains("focused") && container.id != `user-container-${HOST_UID}`){
+                            console.log(`Host looked at ${container.id} for a second and container is white. proceeding with shift focus logic.`);
                             let hostWantsToFocus = confirm("Do you want to switch focus?")
                             if (hostWantsToFocus) {
-                                console.log("Sending shift focus message.");
+                                console.log(`Host wants to focus to ${container.id}. Sending shift focus message.`);
+                                for(videoContainer of videoContainers){
+                                    if(videoContainer.id == container.id){
+                                        videoContainer.classList.add("focused");
+                                        changeVolumeForUser(container.id.split("-")[2], 100);
+                                    }else{
+                                        videoContainer.classList.remove("focused");
+                                        changeVolumeForUser(videoContainer.id.split("-")[2], 30);
+                                    }
+                                }
                                 sendShiftFocusMessage(container, channel);
-                                gazeStartTime = null;
-                                lastSwitchTime = currentTime;
-                            }else{
-                                gazeStartTime = null;
-                                lastSwitchTime = currentTime;
                             }
+                            gazeStartTime = null;
+                            lastSwitchTime = currentTime;
                         }
                         }else{
                             console.log("border_color is green, not sending message.");

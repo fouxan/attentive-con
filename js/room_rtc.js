@@ -11,7 +11,7 @@ if(!uid){
     uid = String(Math.floor(Math.random() * 10000))
     sessionStorage.setItem('uid', uid)
 }
-hostUID = "1";
+const hostUID = "1";
 isHost = sessionStorage.getItem("is_host") == 'true';
 if(isHost){
     uid = hostUID;
@@ -78,7 +78,6 @@ let joinStream = async () => {
 
 let handleUserPublished = async (user, mediaType) => {
     remoteUsers[user.uid] = user
-
     await client.subscribe(user, mediaType)
 
     let player = document.getElementById(`user-container-${user.uid}`)
@@ -138,6 +137,27 @@ let toggleCamera = async (e) => {
     }
 }
 
+let changeVolumeForUser = async (usersUID, volumeLevel) => {
+    if(usersUID === uid){
+        await localTracks[0].setVolume(volumeLevel);
+    }else{
+        let userObject = remoteUsers[usersUID];
+        await userObject.audioTrack.setVolume(volumeLevel);
+    }
+}
+
+
+// function adjustUserVolume(userUid, volumeLevel) {
+//     // if(userUid === uid) {
+//     //     localTracks[0].adjustPublishVolume(volumeLevel * 100); // adjust for host
+//     // } else {
+//     //     let userObject = remoteUsers[userUid];
+//     //     userObject.audioTrack.adjustPlayVolume(volumeLevel * 100); // adjust for remote user
+//     // }
+//     client.adjustUserPlaybackSignalVolume(userUid, volumeLevel);
+// }
+
+
 let leaveStream = async (e) => {
     e.preventDefault()
 
@@ -156,7 +176,7 @@ let leaveStream = async (e) => {
     channel.sendMessage({text:JSON.stringify({'type':'user_left', 'uid':uid})})
 }
 
-function handleChannelMessage(messageData, MemberId){
+let handleChannelMessage = async (messageData, MemberId)=>{
     let data = JSON.parse(messageData.text)
     console.log(`A new message was received ${data.type}`)
     if(data.type === 'user_left'){
@@ -164,32 +184,25 @@ function handleChannelMessage(messageData, MemberId){
     }
 
     if(data.type === 'switch_focus'){
-        setTimeout(() => {
+        setTimeout(async () => {
             let videoContainers = document.getElementsByClassName("video__container");
             for(const videoContainer of videoContainers){
                 let videoPlayer = videoContainer.getElementsByTagName("video")[0];
+                let containerUid = videoContainer.id.split("-")[2];
                 if(videoContainer.id === `user-container-${data.uid}` || videoContainer.id === `user-container-${hostUID}`){
-                    if(videoContainer.id === `user-container-${data.uid}`){
-                        console.log("Changed border color of host.")
-                    }else{
-                        console.log("Changed border color of user.")
-                    }
-                    videoContainer.style.borderColor = "green"
-                    videoPlayer.muted = false;
+                    videoContainer.classList.add("focused");
+                    changeVolumeForUser(data.uid, 100);
                 }else{
-                    videoContainer.style.borderColor = "white"
-                    videoPlayer.muted = true;
+                    videoContainer.classList.remove("focused");
+                    changeVolumeForUser(containerUid, 30);
                 }
             }
         }, 300);
-        channel.sendMessage({
-            text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
-        });
     }
 
     if(data.type === 'distinguish_host'){
         let hostVideoContainer = document.getElementById(`user-container-${hostUID}`);
-        hostVideoContainer.style.borderColor = "green";
+        hostVideoContainer.classList.add("focused");
     }
 }
 
