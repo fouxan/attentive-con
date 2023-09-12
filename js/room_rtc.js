@@ -67,12 +67,9 @@ let joinStream = async () => {
     localTracks[1].play(`user-${uid}`)
     await client.publish([localTracks[0], localTracks[1]])
 
-    if(isHost || hostExists()){
+    if(isHost){
         videoContainer = document.getElementById(`user-container-${hostUID}`)
-        videoContainer.style.borderColor = "green";
-        channel.sendMessage({
-            text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
-        });
+        videoContainer.classList.add("focused-user")
     }
 }
 
@@ -96,16 +93,16 @@ let handleUserPublished = async (user, mediaType) => {
     if(mediaType === 'audio'){
         user.audioTrack.play()
     }
-    if(isHost || hostExists()){
+    if(isHost){
         videoContainer = document.getElementById(`user-container-${hostUID}`)
-        videoContainer.style.borderColor = "green";
-        channel.sendMessage({
-            text: JSON.stringify({ type: "distinguish_host", uid: hostUID }),
-        });
+        videoContainer.classList.add("focused-user")
     }
 }
 
 let handleUserLeft = async (user) => {
+    if(user.uid === hostUID){
+        channel.sendMessage({text:JSON.stringify({'type':'end_meeting'})});
+    }
     delete remoteUsers[user.uid]
     let item = document.getElementById(`user-container-${user.uid}`)
     if(item){
@@ -137,29 +134,10 @@ let toggleCamera = async (e) => {
     }
 }
 
-let changeVolumeForUser = async (usersUID, volumeLevel) => {
-    if(usersUID === uid){
-        await localTracks[0].setVolume(volumeLevel);
-    }else{
-        let userObject = remoteUsers[usersUID];
-        await userObject.audioTrack.setVolume(volumeLevel);
-    }
-}
-
-
-// function adjustUserVolume(userUid, volumeLevel) {
-//     // if(userUid === uid) {
-//     //     localTracks[0].adjustPublishVolume(volumeLevel * 100); // adjust for host
-//     // } else {
-//     //     let userObject = remoteUsers[userUid];
-//     //     userObject.audioTrack.adjustPlayVolume(volumeLevel * 100); // adjust for remote user
-//     // }
-//     client.adjustUserPlaybackSignalVolume(userUid, volumeLevel);
-// }
-
-
 let leaveStream = async (e) => {
-    e.preventDefault()
+    if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+    }
 
     document.getElementById('join-btn').style.display = 'block'
     document.getElementsByClassName('stream__actions')[0].style.display = 'none'
@@ -183,31 +161,10 @@ let handleChannelMessage = async (messageData, MemberId)=>{
         document.getElementById(`user-container-${data.uid}`).remove()
     }
 
-    if(data.type === 'switch_focus'){
-        setTimeout(async () => {
-            let videoContainers = document.getElementsByClassName("video__container");
-            for(const videoContainer of videoContainers){
-                let videoPlayer = videoContainer.getElementsByTagName("video")[0];
-                let containerUid = videoContainer.id.split("-")[2];
-                if(videoContainer.id === `user-container-${data.uid}` || videoContainer.id === `user-container-${hostUID}`){
-                    videoContainer.classList.add("focused");
-                    changeVolumeForUser(data.uid, 100);
-                }else{
-                    videoContainer.classList.remove("focused");
-                    changeVolumeForUser(containerUid, 30);
-                }
-            }
-        }, 300);
+    if(data.type === "end_meeting"){
+        alert("The host has ended the meeting.");
+        leaveStream();
     }
-
-    if(data.type === 'distinguish_host'){
-        let hostVideoContainer = document.getElementById(`user-container-${hostUID}`);
-        hostVideoContainer.classList.add("focused");
-    }
-}
-
-function hostExists(){
-    return document.getElementById(`user-${hostUID}`) !== null;
 }
 
 let leaveChannel = async () => {

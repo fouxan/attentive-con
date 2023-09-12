@@ -44,8 +44,12 @@
   width: 100%;
 }
 
-.focused {
-  border-color: rgb(0, 128, 0);
+.focused-user {
+  border: 2px solid green;
+}
+
+.unfocused-user {
+  border: 2px solid red;
 }
 
 

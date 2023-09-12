@@ -7,16 +7,6 @@ let gazeStartTime = null;
 let resetGazeTimeout = null;
 let lastSwitchTime = null;
 
-function sendShiftFocusMessage(container, channel) {
-    let uid = container.id.split("-")[2];
-
-    if(channel){
-        channel.sendMessage({
-            text: JSON.stringify({ type: "switch_focus", uid: uid }),
-        });
-    }
-}
-
 function isLookingAtElement(gazeData, element) {
     if(typeof element === 'object' && element !== null && 'getBoundingClientRect' in element){
         const elementRect = element.getBoundingClientRect();
@@ -29,6 +19,40 @@ function isLookingAtElement(gazeData, element) {
         gazeY <= elementRect.bottom + 100);
     }
     return false;
+}
+
+let changeVolumeForUser = async (usersUID, volumeLevel) => {
+    if(usersUID === uid){
+        await localTracks[0].setVolume(volumeLevel);
+    }else{
+        let userObject = remoteUsers[usersUID];
+        await userObject.audioTrack.setVolume(volumeLevel);
+    }
+}
+
+function focusOnUser(uid) {
+    console.log('Focusing on user:', uid);
+
+    // Add green border to focused user
+    const focusedUserContainer = document.getElementById(`user-container-${uid}`);
+    if (focusedUserContainer) {
+        focusedUserContainer.classList.add('focused-user');
+        focusedUserContainer.classList.remove('unfocused-user');
+        changeVolumeForUser(uid, 100);
+    }
+
+    // Add red border to all other users
+    for (let userId in remoteUsers) {
+        console.log('Processing user:', userId);
+        if (userId !== uid && userId !== HOST_UID) {
+            const userContainer = document.getElementById(`user-container-${userId}`);
+            if (userContainer) {
+                userContainer.classList.add('unfocused-user');
+                userContainer.classList.remove('focused-user');
+                changeVolumeForUser(userContainer.id.split("-")[2], 20);
+            }
+        }
+    }
 }
 
 
@@ -44,37 +68,20 @@ if(isHost){
         let videoContainers = document.getElementsByClassName("video__container");
         for(container of videoContainers){
             if (isLookingAtElement(gazeData, container)) {
-                console.log(`Host is looking at ${container.id}. Checking if a second has passed.`);
                 if (gazeStartTime === null) {
-                    console.log("gazeStartTime is null")
                     gazeStartTime = new Date().getTime();
                 }else {
                     const gazeDuration = new Date().getTime() - gazeStartTime;
-                    console.log(`gazeStartTime not null. gazeDuration: ${gazeDuration}`,)
                     if (gazeDuration >= THRESHOLD_TIME) {
-                        console.log("A second has passed.")
-                        if (!container.classList.contains("focused") && container.id != `user-container-${HOST_UID}`){
-                            console.log(`Host looked at ${container.id} for a second and container is white. proceeding with shift focus logic.`);
+                        if (!container.classList.contains("focused-user") && container.id != `user-container-${HOST_UID}`){
                             let hostWantsToFocus = confirm("Do you want to switch focus?")
                             if (hostWantsToFocus) {
-                                console.log(`Host wants to focus to ${container.id}. Sending shift focus message.`);
-                                for(videoContainer of videoContainers){
-                                    if(videoContainer.id == container.id){
-                                        videoContainer.classList.add("focused");
-                                        changeVolumeForUser(container.id.split("-")[2], 100);
-                                    }else{
-                                        videoContainer.classList.remove("focused");
-                                        changeVolumeForUser(videoContainer.id.split("-")[2], 30);
-                                    }
-                                }
-                                sendShiftFocusMessage(container, channel);
+                                focusOnUser(container.id.split("-")[2])
                             }
                             gazeStartTime = null;
                             lastSwitchTime = currentTime;
                         }
-                        }else{
-                            console.log("border_color is green, not sending message.");
-                        }
+                    }
                 }
 
                 if (resetGazeTimeout) {
