@@ -18,6 +18,12 @@ if(isHost){
     sessionStorage.setItem("uid", hostUID)
 }
 
+let userGroups = {
+    "1": "g0",
+};
+const groupSize = 2;
+let numberOfParticipants = 0;
+
 const queryString = window.location.search
 const urlParams = new URLSearchParams(queryString)
 let roomId = urlParams.get('room')
@@ -93,9 +99,11 @@ let handleUserPublished = async (user, mediaType) => {
     if(mediaType === 'audio'){
         user.audioTrack.play()
     }
+
     if(isHost){
-        videoContainer = document.getElementById(`user-container-${hostUID}`)
-        videoContainer.classList.add("focused-user")
+        // videoContainer = document.getElementById(`user-container-${hostUID}`)
+        // videoContainer.classList.add("focused-user")
+        assignGroup(user.uid);
     }
 }
 
@@ -152,6 +160,9 @@ let leaveStream = async (e) => {
     document.getElementById(`user-container-${uid}`).remove()
 
     channel.sendMessage({text:JSON.stringify({'type':'user_left', 'uid':uid})})
+    if(uid === hostUID){
+        channel.sendMessage({text:JSON.stringify({"type":'end_meeting'})})
+    }
 }
 
 let handleChannelMessage = async (messageData, MemberId)=>{
@@ -159,17 +170,43 @@ let handleChannelMessage = async (messageData, MemberId)=>{
     console.log(`A new message was received ${data.type}`)
     if(data.type === 'user_left'){
         document.getElementById(`user-container-${data.uid}`).remove()
+        delete userGroups[data.uid]
     }
 
-    if(data.type === "end_meeting"){
+    if(data.type === 'end_meeting'){
         alert("The host has ended the meeting.");
         leaveStream();
+    }
+
+    if(data.type === 'group_assignment'){
+        userGroups[data.uid] = data.group;
+        sessionStorage.setItem(`group_of_${data.uid}`, data.group)
     }
 }
 
 let leaveChannel = async () => {
     await channel.leave()
     await rtmClient.logout()
+}
+
+function hostExists(){
+    return document.getElementById(`user-container-${hostUID}`) !== null;
+}
+
+function assignGroup(userID){
+    if(userID === hostUID) return;
+
+    let otherUsers = Array.from(document.getElementsByClassName("video__container")).filter(elem => !elem.id.includes(hostUID));
+    numberOfParticipants = otherUsers.length + 1;
+    console.log(`otherUsers: ${otherUsers}`);
+    console.log(`totalParticipants: ${numberOfParticipants}`);
+
+    const assignedGroup = `g${Math.ceil((numberOfParticipants)/groupSize)}`
+    userGroups[userID] = assignedGroup
+    sessionStorage.setItem(`group_of_${userID}`, assignedGroup)
+    channel.sendMessage({
+        text: JSON.stringify({'type': 'group_assignment', 'uid': userID, 'group': assignedGroup}),
+    });
 }
 
 document.getElementById('camera-btn').addEventListener('click', toggleCamera)

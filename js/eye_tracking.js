@@ -6,6 +6,7 @@ let isHost = sessionStorage.getItem("is_host") == 'true';
 let gazeStartTime = null;
 let resetGazeTimeout = null;
 let lastSwitchTime = null;
+let currentFocusedGroup = null;
 
 function isLookingAtElement(gazeData, element) {
     if(typeof element === 'object' && element !== null && 'getBoundingClientRect' in element){
@@ -33,18 +34,18 @@ let changeVolumeForUser = async (usersUID, volumeLevel) => {
 function focusOnUser(uid) {
     console.log('Focusing on user:', uid);
 
-    // Add green border to focused user
     const focusedUserContainer = document.getElementById(`user-container-${uid}`);
     if (focusedUserContainer) {
         focusedUserContainer.classList.add('focused-user');
         focusedUserContainer.classList.remove('unfocused-user');
         changeVolumeForUser(uid, 100);
+        currentFocusedGroup = userGroups[uid];
     }
 
-    // Add red border to all other users
     for (let userId in remoteUsers) {
+        let currentUsersGroup = userGroups[userId];
         console.log('Processing user:', userId);
-        if (userId !== uid && userId !== HOST_UID) {
+        if (userId !== uid && userId !== HOST_UID && currentUsersGroup !== currentFocusedGroup) {
             const userContainer = document.getElementById(`user-container-${userId}`);
             if (userContainer) {
                 userContainer.classList.add('unfocused-user');

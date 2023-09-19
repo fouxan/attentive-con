@@ -44,6 +44,18 @@
   width: 100%;
 }
 
+.user-label {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 5px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+
 .focused-user {
   border: 2px solid green;
 }
