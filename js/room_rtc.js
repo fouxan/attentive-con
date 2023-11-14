@@ -130,6 +130,19 @@ let handleUserLeft = async (user) => {
   if (item) {
     item.remove();
   }
+
+  for (let group in groups) {
+    let index = groups[group].indexOf(user.uid);
+    if (index !== -1) {
+      groups[group].splice(index, 1);
+      for (let remainingUserID of groups[group]) {
+        groups[remainingUserID] = [...groups[group]];
+      }
+    }
+  }
+
+  delete groups[user.uid];
+
   delete users[user.uid];
 };
 
@@ -188,10 +201,10 @@ function updateVolumeAndBorderColor() {
     if (videoContainer) {
       if (groups[userId] && groups[userId].includes(uid)) {
         setBorderColor("green", userId);
-        setVolume(100, userId);
+        changeVolume(100, userId);
       } else {
         setBorderColor("red", userId);
-        setVolume(20, userId);
+        changeVolume(20, userId);
       }
     }
   }
@@ -246,33 +259,54 @@ let handleChannelMessage = async (messageData) => {
       let promptingName = users[data.from].name;
       alert(`${promptingName} is focusing on you.`);
 
+      for (let userId in groups) {
+        let index = groups[userId].indexOf(data.from);
+        if (index !== -1) {
+          groups[userId].splice(index, 1);
+          console.log(`From focus handler: removed ${userId} from a group: ${groups[userId]}`)
+        }
+      }
+
+      for(let userId in groups){
+        for(let remainingUserId of groups[userId]){
+          groups[remainingUserId] = [...groups[userId]];
+        }
+      }
+
+      delete groups[data.from];
+      console.log(`From focus handler:`)
+      console.log(groups)
+
       let focusedUserGroup = groups[data.to];
 
-      if(!focusedUserGroup) {
+      if (!focusedUserGroup) {
         groups[data.to] = [data.to, data.from];
         groups[data.from] = [data.to, data.from];
       } else {
-
-        let focusingUserGroup = groups[data.from];
-        if(focusingUserGroup) {
-          let index = focusingUserGroup.indexOf(data.from);
-          if (index !== -1) {
-            focusingUserGroup.splice(index, 1);
-          }
-        }
+        // let focusingUserGroup = groups[data.from];
+        // if(focusingUserGroup) {
+        //   let index = focusingUserGroup.indexOf(data.from);
+        //   if (index !== -1) {
+        //     focusingUserGroup.splice(index, 1);
+        //   }
+        // }
 
         focusedUserGroup.push(data.from);
 
-        for (let userId of focusedUserGroup){
+        for (let userId of focusedUserGroup) {
           groups[userId] = [...focusedUserGroup];
         }
       }
+      console.log(`After addition: ${groups}`)
+
+      console.log(groups[data.to]);
+      console.log(groups[data.from]);
 
       for (let userId in users) {
         await channel.sendMessage({
           text: JSON.stringify({
             type: "group_update",
-            group: groups[data.from],
+            group: groups[data.to],
           }),
         });
       }
@@ -314,12 +348,16 @@ let leaveChannel = async () => {
 //   }
 // }
 
-function setVolume(volumeLevel, userID) {
+function changeVolume(volumeLevel, userID) {
   if (userID === uid) {
-    localTracks[0].setVolume(volumeLevel);
+    if (localTracks[0]) {
+      localTracks[0].setVolume(volumeLevel);
+    }
   } else {
     let userObject = remoteUsers[userID];
-    userObject.audioTrack.setVolume(volumeLevel);
+    if (userObject && userObject.audioTrack) {
+      userObject.audioTrack.setVolume(volumeLevel);
+    }
   }
 }
 

@@ -31,6 +31,36 @@ function isLookingAtElement(gazeData, element) {
 async function focusOnUser(uid) {
   console.log("Focusing on user: ", uid);
 
+  for(let userId in groups){
+    let index = groups[userId].indexOf(userId);
+    if(index !== -1){
+      groups[userId].splice(index, 1);
+    }
+  }
+
+  // Update the groups for all remaining users in each group
+  for(let userId in groups){
+    for(let remainingUserId of groups[userId]){
+      groups[remainingUserId] = [...groups[userId]];
+    }
+  }
+
+  // Remove the focusing user's own group
+  delete groups[userId];
+
+  let focusedUserGroup = groups[uid];
+
+  if (!focusedUserGroup) {
+    groups[uid] = [uid, userId];
+    groups[userId] = [uid, userId];
+  } else {
+    focusedUserGroup.push(userId);
+
+    for (let userId of focusedUserGroup) {
+      groups[userId] = [...focusedUserGroup];
+    }
+  }
+
   await channel.sendMessage({
     text: JSON.stringify({
       type: "focus",
