@@ -252,7 +252,7 @@ let handleChannelMessage = async (messageData) => {
   }
 
   if (data.type === "end_meeting") {
-    confirm("The host has ended the meeting. Redirecting to Lobby...");
+    alert("The host has ended the meeting. Redirecting to Lobby...");
     leaveStream();
     leaveChannel();
     window.location = "index.html";
@@ -262,7 +262,6 @@ let handleChannelMessage = async (messageData) => {
     console.log(`User ${data.to} is focusing on ${data.from}.`);
     if (data.to === uid) {
       let promptingName = users[data.from].name;
-      alert(`${promptingName} is focusing on you.`);
 
       for (let userId in groups) {
         let index = groups[userId].indexOf(data.from);
@@ -317,6 +316,7 @@ let handleChannelMessage = async (messageData) => {
       }
       console.log(groups);
       updateVolumeAndBorderColor();
+      alert(`${promptingName} is focusing on you.`);
     }
   }
 
