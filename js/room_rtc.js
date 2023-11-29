@@ -78,7 +78,7 @@ let joinStream = async () => {
   localTracks[1].play(`user-${uid}`);
   await client.publish([localTracks[0], localTracks[1]]);
   const videoContainer = document.getElementById(`user-container-${uid}`);
-  videoContainer.classList.add("me");
+  videoContainer.classList.add("focused-user");
   const nameLabel = document.createElement("div");
   nameLabel.classList.add("name-label");
   nameLabel.textContent = users[uid].name;

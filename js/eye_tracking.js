@@ -1,6 +1,6 @@
 let userId = sessionStorage.getItem("uid");
 let hasJoined = sessionStorage.getItem("has_joined");
-const THRESHOLD_TIME = 1000;
+const THRESHOLD_TIME = 3000;
 const RESET_DELAY = 500;
 const COOLDOWN = 10000;
 let gazeStartTime = null;

@@ -32,7 +32,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  border: 2px solid #ffffff;
+  border: 5px solid #ffffff;
   border-radius: 10px;
   overflow: hidden;
   height: 400px;
@@ -57,11 +57,11 @@
 }
 
 .focused-user {
-  border: 2px solid green;
+  border: 5px solid green;
 }
 
 .unfocused-user {
-  border: 2px solid red;
+  border: 5px solid red;
 }
 
 .me {
