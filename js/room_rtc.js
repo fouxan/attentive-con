@@ -78,7 +78,7 @@ let joinStream = async () => {
   localTracks[1].play(`user-${uid}`);
   await client.publish([localTracks[0], localTracks[1]]);
   const videoContainer = document.getElementById(`user-container-${uid}`);
-  videoContainer.classList.add("focused-user");
+  videoContainer.classList.add("me");
   const nameLabel = document.createElement("div");
   nameLabel.classList.add("name-label");
   nameLabel.textContent = users[uid].name;
@@ -197,6 +197,11 @@ let leaveStream = async (e) => {
 
 function updateVolumeAndBorderColor() {
   for (let userId in users) {
+    console.log(`Updating ${userId}`);
+    if (userId === uid) {
+      console.log(`Skipping ${userId} ${uid}`);
+      continue;
+    }
     let videoContainer = document.getElementById(`user-container-${userId}`);
     if (videoContainer) {
       if (groups[userId] && groups[userId].includes(uid)) {
