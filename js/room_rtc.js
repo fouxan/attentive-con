@@ -1,27 +1,49 @@
 const APP_ID = "af633987e6be495aafe799b3d6daca51";
 
+// the 4 variables below are set by the agora server for use in conferencing
 let token = null;
 let client;
-
 let rtmClient;
 let channel;
 
+//manual uid generation, so we have more control over the users
 let uid = sessionStorage.getItem("uid");
 if (!uid) {
   uid = String(Math.floor(Math.random() * 10000));
   sessionStorage.setItem("uid", uid);
 }
+
+//check if the user is the host, to be used when host leaves the meet
 const isHost = sessionStorage.getItem("is_host") == "true";
 if (isHost) {
   console.log(`I am the host ${isHost}`);
 }
 
+//userName is retreived from lobby form for name label
 let userName = sessionStorage.getItem("display_name");
 if (!userName) {
   window.location = "index.html";
 }
-
+/*
+The groups object is a dictionary of user IDs to arrays of user IDs
+Each array represents a group of users that are focusing on each other
+sample structure:
+  { 
+    "user1": ["user1", "user2", "user3"], 
+    "user2": ["user1", "user2", "user3"], 
+    "user3": ["user1", "user2", "user3"],
+    "user4": ["user4"]
+    "user5": ["user5", "user6"],
+    "user6": ["user5", "user6"]
+  }
+  the above structure means that users 1, 2 and 3 are focusing on each other
+  user 4 has not focused on to anyone
+  users 5 and 6 are focusing on each other
+*/
 let groups = {};
+
+//users is a dictionary of user IDs to user objects
+//each user object consists of their uid and name
 let users = {
   [uid]: {
     id: uid,
@@ -29,6 +51,7 @@ let users = {
   },
 };
 
+//retrieve the room ID from the URL
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 let roomId = urlParams.get("room");
@@ -37,8 +60,14 @@ if (!roomId) {
   roomId = "main";
 }
 
+//localTracks is an array of the local user's media tracks
+//remoteUsers is a dictionary of user IDs to user objects consisting of their media tracks
 let localTracks = [];
 let remoteUsers = {};
+
+// initialize the AgoraRTC client, join the room and setup for the meeting
+// the user has not yet fully joined the room, their audio and video tracks have not yet been published
+// they fully join when they press the join call button
 
 let joinRoomInit = async () => {
   rtmClient = await AgoraRTM.createInstance(APP_ID);
@@ -59,7 +88,14 @@ let joinRoomInit = async () => {
   client.on("user-left", handleUserLeft);
 };
 
+// joinStream is called when the user presses the join call button
+// the user's audio and video tracks are published and they have fully joined to the room
+// everyone else is notified about their joining,
+// they get a copy of the users and groups objects in response to the user_joined message
+// they are visible to everyone else in the room and can see everyone else in the room
 let joinStream = async () => {
+  // the has_joined flag is used to check if the user has joined the room
+  // we do this to activate the eye tracking and focus features only after the user has joined
   sessionStorage.setItem("has_joined", true);
   console.log("User has joined, setting has_joined to true");
   document.getElementById("join-btn").style.display = "none";
@@ -90,6 +126,10 @@ let joinStream = async () => {
   console.log("User has joined, sending user_joined message");
 };
 
+// handleUserPublished is called when other users join the room
+// the user is subscribed to the other user's audio and video tracks
+// the other user's audio and video tracks are played on the user's screen
+// the other user's name is displayed on their video
 let handleUserPublished = async (user, mediaType) => {
   remoteUsers[user.uid] = user;
   let { name } = await rtmClient.getUserAttributesByKeys(user.uid, ["name"]);
@@ -124,6 +164,9 @@ let handleUserPublished = async (user, mediaType) => {
   updateVolumeAndBorderColor();
 };
 
+// handleUserLeft is called when other users leave the room
+// the user is unsubscribed from the other user's audio and video tracks
+// the other user's video is removed from the user's screen
 let handleUserLeft = async (user) => {
   delete remoteUsers[user.uid];
   let item = document.getElementById(`user-container-${user.uid}`);
@@ -146,6 +189,7 @@ let handleUserLeft = async (user) => {
   delete users[user.uid];
 };
 
+// toggleMic and toggleCamera are called when the user presses the mute and camera buttons
 let toggleMic = async (e) => {
   let button = e.currentTarget;
 
@@ -170,6 +214,11 @@ let toggleCamera = async (e) => {
   }
 };
 
+// leaveStream is called when the user presses the leave call button
+// the user's audio and video tracks are unpublished
+// the user is unsubscribed from the other user's audio and video tracks
+// the user's video is removed from the other user's screen
+// if host everyone gets a message saying host has ended the meeting
 let leaveStream = async (e) => {
   if (e && typeof e.preventDefault === "function") {
     e.preventDefault();
@@ -195,6 +244,11 @@ let leaveStream = async (e) => {
   }
 };
 
+// updateVolumeAndBorderColor is called when the user joins the room and when other users join the room
+// or when a focus event happens
+// it updates the volume and border color of the user's video based on the groups object
+// if the user is in a group, their volume is set to 100 and their border color is green
+// if the user is not in a group, their volume is set to 20 and their border color is red
 function updateVolumeAndBorderColor() {
   for (let userId in users) {
     console.log(`Updating ${userId}`);
@@ -214,6 +268,15 @@ function updateVolumeAndBorderColor() {
     }
   }
 }
+
+// handleChannelMessage is called when a message is sent in the channel
+// the message is parsed and handled based on the type of message
+// user_left: the user who left is removed from the groups object
+// user_joined: the user who joined is added to the users object
+// user_list: the user who joined gets a copy of the users and groups objects
+// end_meeting: the user is redirected to the lobby
+// focus: the user who is focusing on the other user is added to the other user's group
+// group_update: the user updates their group based on the group_update message
 
 let handleChannelMessage = async (messageData) => {
   let data = JSON.parse(messageData.text);
@@ -287,14 +350,6 @@ let handleChannelMessage = async (messageData) => {
         groups[data.to] = [data.to, data.from];
         groups[data.from] = [data.to, data.from];
       } else {
-        // let focusingUserGroup = groups[data.from];
-        // if(focusingUserGroup) {
-        //   let index = focusingUserGroup.indexOf(data.from);
-        //   if (index !== -1) {
-        //     focusingUserGroup.splice(index, 1);
-        //   }
-        // }
-
         focusedUserGroup.push(data.from);
 
         for (let userId of focusedUserGroup) {
@@ -328,31 +383,16 @@ let handleChannelMessage = async (messageData) => {
     console.log(groups);
     updateVolumeAndBorderColor();
   }
-
-  // if (data.type === "ignore" && data.to === uid) {
-  //   // Notify the user that they were ignored
-  //   if (data.to === uid) {
-  //     let promptedName = users[data.from].name;
-  //     alert(`${promptedName} ignored your focus.`);
-  //   }
-  // }
 };
 
+// leaveChannel is called when the user leaves the room
+// the user leaves the channel and logs out of the RTM client
 let leaveChannel = async () => {
   await channel.leave();
   await rtmClient.logout();
 };
 
-// async function promptUser(userId, message) {
-//   // Check if the current user is the one being prompted
-//   if (userId === uid) {
-//     return Promise.resolve(confirm(message));
-//   } else {
-//     // If the current user is not the one being prompted, return false
-//     return Promise.resolve(false);
-//   }
-// }
-
+// changeVolume and setBorderColor are helper functions of updateVolumeAndBorderColor
 function changeVolume(volumeLevel, userID) {
   if (userID === uid) {
     if (localTracks[0]) {
@@ -379,10 +419,12 @@ function setBorderColor(color, userID) {
   }
 }
 
+// wait for room to be initialized
 (async () => {
   await joinRoomInit();
 })();
 
+// event listeners for the buttons
 document.getElementById("join-btn").addEventListener("click", joinStream);
 document.getElementById("camera-btn").addEventListener("click", toggleCamera);
 document.getElementById("mic-btn").addEventListener("click", toggleMic);

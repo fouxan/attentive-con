@@ -1,13 +1,18 @@
 let userId = sessionStorage.getItem("uid");
 let hasJoined = sessionStorage.getItem("has_joined");
+// THRESHOLD_TIME is the amount of time in milliseconds that the user has to look at a video container before the focus switches to that user
 const THRESHOLD_TIME = 3000;
+// RESET_DELAY is the amount of time in milliseconds that the user has to look away from a video container before the gazeStartTime is reset
 const RESET_DELAY = 500;
+// COOLDOWN is the amount of time in milliseconds that the user has to wait before switching focus again
 const COOLDOWN = 10000;
+// variables to keep track of the gaze periods
 let gazeStartTime = null;
 let resetGazeTimeout = null;
 let lastSwitchTime = null;
 let currentFocusedGroup = null;
 
+// isLookingAtElement returns true if the user is looking at the element located at the gazeData coordinates
 function isLookingAtElement(gazeData, element) {
   if (element.id === `user-container-${userId}`) return false;
   if (
@@ -28,6 +33,8 @@ function isLookingAtElement(gazeData, element) {
   return false;
 }
 
+// focusOnUser focuses on the user with the given uid i.e, groups object, volume and border color are updated and
+// sends a 'focus' channel message to the target user and 'group_update' channel message to all users to notify everyone about the change
 async function focusOnUser(uid) {
   console.log("Focusing on user: ", uid);
 
@@ -72,6 +79,12 @@ async function focusOnUser(uid) {
   });
 }
 
+// startEyeTracking starts the eye tracking and sets the gaze listener
+// if the user is looking at a video container for more than THRESHOLD_TIME, a confirmation dialog is shown to the user
+// if the user confirms, the focus is switched to the user in the video container via call to the focusOnUser function
+// the gazeStartTime is reset if the user looks away from the video container for more than RESET_DELAY
+// the gazeStartTime is reset if the user switches focus to another user
+// on focusing or cancelling focus a a user will have to wait for COOLDOWN time before switching focus again
 function startEyeTracking() {
   webgazer
     .setGazeListener(function (gazeData) {
@@ -129,6 +142,7 @@ function startEyeTracking() {
   webgazer.showVideoPreview(false).showPredictionPoints(true);
 }
 
+// wait for user to join before starting eye tracking
 let checkJoinedInterval = setInterval(() => {
   hasJoined = sessionStorage.getItem("has_joined");
   userId = sessionStorage.getItem("uid");

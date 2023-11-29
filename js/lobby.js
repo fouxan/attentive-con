@@ -6,6 +6,8 @@ if (displayName) {
   form.name.value = displayName;
 }
 
+// take user to the room if everything is set up i.e, a name and room id is entered
+// set the required session storage variables like display_name, is_host, has_joined
 form.addEventListener("submit", (e) => {
   e.preventDefault();
 
