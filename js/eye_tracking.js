@@ -61,6 +61,8 @@ async function focusOnUser(uid) {
     }
   }
 
+  updateVolumeAndBorderColor();
+
   await channel.sendMessage({
     text: JSON.stringify({
       type: "focus",
