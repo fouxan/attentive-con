@@ -1,7 +1,7 @@
 let userID = sessionStorage.getItem("uid");
 let hasJoined = sessionStorage.getItem("has_joined");
 // THRESHOLD_TIME is the amount of time in milliseconds that the user has to look at a video container before the focus switches to that user
-const THRESHOLD_TIME = 3000;
+const THRESHOLD_TIME = 1000;
 // RESET_DELAY is the amount of time in milliseconds that the user has to look away from a video container before the gazeStartTime is reset
 const RESET_DELAY = 500;
 // COOLDOWN is the amount of time in milliseconds that the user has to wait before switching focus again

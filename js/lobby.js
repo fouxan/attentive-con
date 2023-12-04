@@ -25,5 +25,5 @@ form.addEventListener("submit", (e) => {
     inviteCode = String(Math.floor(Math.random() * 10000));
   }
   sessionStorage.setItem('roomId', inviteCode);
-  window.location = `calibration.html?room=${inviteCode}`;
+  window.location = `room.html?room=${inviteCode}`;
 });

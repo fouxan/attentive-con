@@ -290,7 +290,7 @@ let leaveStream = async (e) => {
     e.preventDefault();
   }
 
-  document.getElementById("join-btn").style.display = "block";
+  // document.getElementById("join-btn").style.display = "block";
   document.getElementsByClassName("stream__actions")[0].style.display = "none";
 
   for (let i = 0; localTracks.length > i; i++) {
@@ -590,10 +590,20 @@ function setBorderColor(color, userID) {
   }
 }
 
+// function updateMuteAllButton(){
+//   if(isHost){
+//     let muteAllButton = document.getElementById("muteAllButton");
+//     for(let micBtn of document.getElementsByClassName("mute-btn")){
+//       if(micBtn.textContent === "Unmute"){
+//         muteAllButton.textContent = "Unmute All";
+//         return;
+//       }
+//     }
+
 function showButtonsIfHost() {
   if (isHost) {
       document.getElementById('muteAllButton').style.display = 'block';
-      document.getElementById('unmuteAllButton').style.display = 'block';
+      // document.getElementById('unmuteAllButton').style.display = 'block';
   }
 }
 
@@ -637,20 +647,59 @@ document.getElementById("mic-btn").addEventListener("click", toggleMic);
 document.getElementById("leave-btn").addEventListener("click", leaveStream);
 
 if(isHost){
-  document.getElementById("muteAllButton").addEventListener("click", async () => {
-    await channel.sendMessage({
-      text: JSON.stringify({
-        type: "mute_all"
-      })
-    })
+  muteAllButton = document.getElementById("muteAllButton");
+  muteAllButton.addEventListener("click", async () => {
+    if(muteAllButton.textContent === "Mute All"){
+      muteAllButton.textContent = "Unmute All";
+      for(micBtn of document.getElementsByClassName("mute-btn")){
+        if(micBtn.textContent === "Mute"){
+          await channel.sendMessage({
+            text: JSON.stringify({
+              type: "mute_user",
+              to: micBtn.id.split("-")[2]
+            })
+          })
+          micBtn.textContent = "Unmute";
+        }
+      }
+    }else{
+      muteAllButton.textContent = "Mute All";
+      for(micBtn of document.getElementsByClassName("mute-btn")){
+        if(micBtn.textContent === "Unmute"){
+          await channel.sendMessage({
+            text: JSON.stringify({
+              type: "unmute_user",
+              to: micBtn.id.split("-")[2]
+            })
+          })
+          micBtn.textContent = "Mute";
+        }
+      }
+    }
+    // await channel.sendMessage({
+    //   text: JSON.stringify({
+    //     type: "mute_all"
+    //   })
+    // })
   })
-  document.getElementById("unmuteAllButton").addEventListener("click", async () => {
-    await channel.sendMessage({
-      text: JSON.stringify({
-        type: "unmute_all"
-      })
-    })
-  })
+  // document.getElementById("unmuteAllButton").addEventListener("click", async () => {
+  //   for(micBtn of document.getElementsByClassName("mute-btn")){
+  //     if(micBtn.textContent === "Mute"){
+  //       await channel.sendMessage({
+  //         text: JSON.stringify({
+  //           type: "unmute_user",
+  //           to: micBtn.id.split("-")[2]
+  //         })
+  //       })
+  //       micBtn.textContent = "Unmute";
+  //     }
+  //   }
+  //   await channel.sendMessage({
+  //     text: JSON.stringify({
+  //       type: "unmute_all"
+  //     })
+  //   })
+  // })
 }
 
 
@@ -659,4 +708,5 @@ window.addEventListener("beforeunload", leaveChannel);
 setInterval(() => {
   updateVolumeAndBorderColor();
   updateNameLabels();
+  // updateMuteAllButton();
 }, 5000); // 5000 milliseconds = 5 seconds
