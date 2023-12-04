@@ -1,4 +1,4 @@
-let userId = sessionStorage.getItem("uid");
+let userID = sessionStorage.getItem("uid");
 let hasJoined = sessionStorage.getItem("has_joined");
 // THRESHOLD_TIME is the amount of time in milliseconds that the user has to look at a video container before the focus switches to that user
 const THRESHOLD_TIME = 3000;
@@ -14,7 +14,7 @@ let currentFocusedGroup = null;
 
 // isLookingAtElement returns true if the user is looking at the element located at the gazeData coordinates
 function isLookingAtElement(gazeData, element) {
-  if (element.id === `user-container-${userId}`) return false;
+  if (element.id === `user-container-${userID}`) return false;
   if (
     typeof element === "object" &&
     element !== null &&
@@ -39,7 +39,7 @@ async function focusOnUser(uid) {
   console.log("Focusing on user: ", uid);
 
   for(let userId in groups){
-    let index = groups[userId].indexOf(userId);
+    let index = groups[userId].indexOf(userID);
     if(index !== -1){
       groups[userId].splice(index, 1);
     }
@@ -53,15 +53,15 @@ async function focusOnUser(uid) {
   }
 
   // Remove the focusing user's own group
-  delete groups[userId];
+  delete groups[userID];
 
   let focusedUserGroup = groups[uid];
 
   if (!focusedUserGroup) {
-    groups[uid] = [uid, userId];
-    groups[userId] = [uid, userId];
+    groups[uid] = [uid, userID];
+    groups[userID] = [uid, userID];
   } else {
-    focusedUserGroup.push(userId);
+    focusedUserGroup.push(userID);
 
     for (let userId of focusedUserGroup) {
       groups[userId] = [...focusedUserGroup];
@@ -69,11 +69,42 @@ async function focusOnUser(uid) {
   }
 
   updateVolumeAndBorderColor();
-
+  updateNameLabels();
   await channel.sendMessage({
     text: JSON.stringify({
       type: "focus",
-      from: userId,
+      from: userID,
+      to: uid,
+    }),
+  });
+}
+
+async function unfocusFromUser(uid) {
+  console.log("Unfocusing from user: ", uid);
+
+  // Find the group the user is currently in
+  let currentGroup = groups[uid];
+
+  // Remove the user from this group
+  let index = currentGroup.indexOf(uid);
+  if (index !== -1) {
+    currentGroup.splice(index, 1);
+  }
+
+  // Update the groups for all remaining users in the group
+  for (let userId of currentGroup) {
+    groups[userId] = [...currentGroup];
+  }
+
+  // Add the user back to their own group
+  groups[uid] = [uid];
+
+  updateVolumeAndBorderColor();
+  updateNameLabels();
+  await channel.sendMessage({
+    text: JSON.stringify({
+      type: "unfocus",
+      from: userID,
       to: uid,
     }),
   });
@@ -87,7 +118,8 @@ async function focusOnUser(uid) {
 // on focusing or cancelling focus a a user will have to wait for COOLDOWN time before switching focus again
 function startEyeTracking() {
   webgazer
-    .setGazeListener(function (gazeData) {
+  .setRegression("ridge")
+  .setGazeListener(function (gazeData) {
       if (gazeData == null) {
         gazeStartTime = null;
         return;
@@ -104,10 +136,10 @@ function startEyeTracking() {
             const gazeDuration = new Date().getTime() - gazeStartTime;
             if (gazeDuration >= THRESHOLD_TIME) {
               let focusId = container.id.split("-")[2];
-              console.log(`User ${userId} is looking at ${container.id}`);
+              console.log(`User ${userID} is looking at ${container.id}`);
               if (
                 !container.classList.contains("focused-user") &&
-                userId !== focusId
+                userID !== focusId
               ) {
                 console.log(users);
                 let focusName = users[focusId].name;
@@ -145,8 +177,8 @@ function startEyeTracking() {
 // wait for user to join before starting eye tracking
 let checkJoinedInterval = setInterval(() => {
   hasJoined = sessionStorage.getItem("has_joined");
-  userId = sessionStorage.getItem("uid");
-  if (userId && hasJoined && hasJoined === "true") {
+  userID = sessionStorage.getItem("uid");
+  if (userID && hasJoined && hasJoined === "true") {
     clearInterval(checkJoinedInterval);
     console.log("User has joined");
     startEyeTracking();

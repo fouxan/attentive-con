@@ -1,5 +1,5 @@
 const APP_ID = "af633987e6be495aafe799b3d6daca51";
-
+// room.html?room=${inviteCode}
 // the 4 variables below are set by the agora server for use in conferencing
 let token = null;
 let client;
@@ -14,10 +14,14 @@ if (!uid) {
 }
 
 //check if the user is the host, to be used when host leaves the meet
+let hostUID = null;
+let hostMarked = false;
 const isHost = sessionStorage.getItem("is_host") == "true";
 if (isHost) {
   console.log(`I am the host ${isHost}`);
+  hostUID = uid;
 }
+
 
 //userName is retreived from lobby form for name label
 let userName = sessionStorage.getItem("display_name");
@@ -41,6 +45,7 @@ sample structure:
   users 5 and 6 are focusing on each other
 */
 let groups = {};
+let groupSymbols = ['🅰', '🅱', '🅲', '🅳', '🅴', '🅵', '🅶', '🅷', '🅸', '🅹', '🅺', '🅻', '🅼', '🅽', '🅾', '🅿', '🆀', '🆁', '🆂', '🆃', '🆄', '🆅', '🆆', '🆇', '🆈', '🆉'];
 
 //users is a dictionary of user IDs to user objects
 //each user object consists of their uid and name
@@ -65,29 +70,6 @@ if (!roomId) {
 let localTracks = [];
 let remoteUsers = {};
 
-// initialize the AgoraRTC client, join the room and setup for the meeting
-// the user has not yet fully joined the room, their audio and video tracks have not yet been published
-// they fully join when they press the join call button
-
-let joinRoomInit = async () => {
-  rtmClient = await AgoraRTM.createInstance(APP_ID);
-  await rtmClient.login({ uid, token });
-
-  await rtmClient.addOrUpdateLocalUserAttributes({ name: userName });
-
-  channel = await rtmClient.createChannel(roomId);
-  await channel.join();
-
-  client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-
-  channel.on("ChannelMessage", handleChannelMessage);
-
-  await client.join(APP_ID, roomId, token, uid);
-
-  client.on("user-published", handleUserPublished);
-  client.on("user-left", handleUserLeft);
-};
-
 // joinStream is called when the user presses the join call button
 // the user's audio and video tracks are published and they have fully joined to the room
 // everyone else is notified about their joining,
@@ -98,7 +80,7 @@ let joinStream = async () => {
   // we do this to activate the eye tracking and focus features only after the user has joined
   sessionStorage.setItem("has_joined", true);
   console.log("User has joined, setting has_joined to true");
-  document.getElementById("join-btn").style.display = "none";
+  // document.getElementById("join-btn").style.display = "none";
   document.getElementsByClassName("stream__actions")[0].style.display = "flex";
 
   localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
@@ -118,11 +100,21 @@ let joinStream = async () => {
   const nameLabel = document.createElement("div");
   nameLabel.classList.add("name-label");
   nameLabel.textContent = users[uid].name;
+  if(isHost){
+    nameLabel.textContent += " 👑";
+    hostMarked = true;
+  }
   videoContainer.appendChild(nameLabel);
-  console.log(videoContainer);
+  groups[uid] = [uid];
+  updateNameLabels();
   channel.sendMessage({
     text: JSON.stringify({ type: "user_joined", uid: uid, name: userName }),
   });
+  if(isHost){
+    channel.sendMessage({
+      text: JSON.stringify({ type: "host_joined", hostID: uid })
+    })
+  }
   console.log("User has joined, sending user_joined message");
 };
 
@@ -138,9 +130,18 @@ let handleUserPublished = async (user, mediaType) => {
 
   let player = document.getElementById(`user-container-${user.uid}`);
   if (player === null) {
-    player = `<div class="video__container" id="user-container-${user.uid}">
-                <div class="video-player" id="user-${user.uid}"></div>
-            </div>`;
+    if(isHost){
+      player = `<div class="video__container" id="user-container-${user.uid}">
+                  <div class="video-player" id="user-${user.uid}"></div>
+                  <div class="name-label">${name}</div>
+                  <button class="mute-btn" id="mute-btn-${user.uid}">Mute</button>
+                </div>`;
+    }else{
+      player = `<div class="video__container" id="user-container-${user.uid}">
+                  <div class="video-player" id="user-${user.uid}"></div>
+                  <div class="name-label">${name}</div>
+                </div>`;
+    }
 
     document
       .getElementById("streams__container")
@@ -155,6 +156,37 @@ let handleUserPublished = async (user, mediaType) => {
     const nameLabel = document.createElement("div");
     nameLabel.classList.add("name-label");
     nameLabel.textContent = name;
+    if(isHost){
+      const muteButton = document.getElementById(`mute-btn-${user.uid}`);
+      muteButton.addEventListener("click", async () => {
+        if(muteButton.textContent === "Mute"){
+          await channel.sendMessage({
+            text: JSON.stringify({
+              type: "mute_user",
+              to: user.uid
+            })
+          })
+          muteButton.textContent = "Unmute";
+        }else{
+          await channel.sendMessage({
+            text: JSON.stringify({
+              type: "unmute_user",
+              to: user.uid
+            })
+          })
+          muteButton.textContent = "Mute";
+        }
+      })
+    }
+    // const focusButton = document.getElementById(`focus-btn-${user.uid}`);
+    // focusButton.addEventListener("click", async() => {
+    //   let videoContainer = document.getElementById(`user-container-${userID}`);
+    //   if(!videoContainer.classList.contains("focused-user")){
+    //     await focusOnUser(user.uid);
+    //   }else{
+    //     await unfocusFromUser(user.uid);
+    //   }
+    // });
     videoContainer.appendChild(nameLabel);
   }
 
@@ -162,6 +194,7 @@ let handleUserPublished = async (user, mediaType) => {
     user.audioTrack.play();
   }
   updateVolumeAndBorderColor();
+  updateNameLabels();
 };
 
 // handleUserLeft is called when other users leave the room
@@ -189,6 +222,14 @@ let handleUserLeft = async (user) => {
   delete users[user.uid];
 };
 
+async function fetchSvg(filename) {
+  let response = await fetch(filename);
+  let data = await response.text();
+  return data;
+}
+
+
+
 // toggleMic and toggleCamera are called when the user presses the mute and camera buttons
 let toggleMic = async (e) => {
   let button = e.currentTarget;
@@ -196,11 +237,32 @@ let toggleMic = async (e) => {
   if (localTracks[0].muted) {
     await localTracks[0].setMuted(false);
     button.classList.add("active");
+    let micOnSvg = await fetchSvg("images/mic-on.svg");
+    button.innerHTML = micOnSvg;
   } else {
     await localTracks[0].setMuted(true);
     button.classList.remove("active");
+    let micOffSvg = await fetchSvg("images/mic-off.svg");
+    button.innerHTML = micOffSvg;
   }
 };
+
+let hostToggleMic = async () => {
+  let button = document.getElementById("mic-btn");
+  if(localTracks[0].muted) {
+    button.disabled = false;
+    await localTracks[0].setMuted(false);
+    button.classList.add("active");
+    let micOnSvg = await fetchSvg("images/mic-on.svg");
+    button.innerHTML = micOnSvg;
+  }else{
+    await localTracks[0].setMuted(true);
+    button.classList.remove("active");
+    let micOffSvg = await fetchSvg("images/mic-off.svg");
+    button.innerHTML = micOffSvg;
+    button.disabled = true;
+  }
+}
 
 let toggleCamera = async (e) => {
   let button = e.currentTarget;
@@ -208,9 +270,13 @@ let toggleCamera = async (e) => {
   if (localTracks[1].muted) {
     await localTracks[1].setMuted(false);
     button.classList.add("active");
+    let videoOnSvg = await fetchSvg("images/video-on.svg");
+    button.innerHTML = videoOnSvg;
   } else {
     await localTracks[1].setMuted(true);
     button.classList.remove("active");
+    let videoOffSvg = await fetchSvg("images/video-off.svg");
+    button.innerHTML = videoOffSvg;
   }
 };
 
@@ -269,6 +335,34 @@ function updateVolumeAndBorderColor() {
   }
 }
 
+function updateNameLabels(){
+  let assignedGroups = {};
+  groupSymbols = ['🅰', '🅱', '🅲', '🅳', '🅴', '🅵', '🅶', '🅷', '🅸', '🅹', '🅺', '🅻', '🅼', '🅽', '🅾', '🅿', '🆀', '🆁', '🆂', '🆃', '🆄', '🆅', '🆆', '🆇', '🆈', '🆉'];
+
+  for( let userID in groups){
+    let group = groups[userID].sort().toString();
+    if(!assignedGroups[group]){
+      assignedGroups[group] = groupSymbols.shift();
+    }else{
+      assignedGroups[group] = assignedGroups[group];
+    }
+
+    let videoContainer = document.getElementById(`user-container-${userID}`);
+    if(videoContainer){
+      let nameLabel = videoContainer.getElementsByClassName("name-label")[0];
+      if(nameLabel){
+        if(userID == hostUID && !hostMarked){
+          nameLabel.textContent += " 👑";
+          hostMarked = true;
+        }
+        nameLabel.textContent = nameLabel.textContent.split(" - ")[0];
+        nameLabel.textContent += ` - ${assignedGroups[group]}`;
+      }
+    }
+    console.log(assignedGroups);
+  }
+}
+
 // handleChannelMessage is called when a message is sent in the channel
 // the message is parsed and handled based on the type of message
 // user_left: the user who left is removed from the groups object
@@ -293,8 +387,17 @@ let handleChannelMessage = async (messageData) => {
       id: data.uid,
       name: data.name,
     };
+    groups[data.uid] = [data.uid];
     console.log(users);
-
+    console.log(groups);
+    if(isHost){
+      await channel.sendMessage({
+        text: JSON.stringify({
+          type: "host_joined",
+          hostID: hostUID
+        })
+      })
+    }
     await channel.sendMessage({
       text: JSON.stringify({
         type: "user_list",
@@ -304,6 +407,7 @@ let handleChannelMessage = async (messageData) => {
       }),
     });
     updateVolumeAndBorderColor();
+    updateNameLabels();
   }
 
   if (data.type === "user_list" && data.to === uid) {
@@ -312,6 +416,7 @@ let handleChannelMessage = async (messageData) => {
     console.log(users);
     console.log(groups);
     updateVolumeAndBorderColor();
+    updateNameLabels();
   }
 
   if (data.type === "end_meeting") {
@@ -321,8 +426,13 @@ let handleChannelMessage = async (messageData) => {
     window.location = "index.html";
   }
 
+  if(data.type === "host_joined"){
+    console.log("Host has joined/already exists");
+    hostUID = data.hostID;
+  }
+
   if (data.type === "focus" && data.to === uid) {
-    console.log(`User ${data.to} is focusing on ${data.from}.`);
+    console.log(`User ${data.from} is focusing on ${data.to}.`);
     if (data.to === uid) {
       let promptingName = users[data.from].name;
 
@@ -360,28 +470,86 @@ let handleChannelMessage = async (messageData) => {
 
       console.log(groups[data.to]);
       console.log(groups[data.from]);
-
-      for (let userId in users) {
-        await channel.sendMessage({
+      console.log(groups);
+      updateVolumeAndBorderColor();
+      updateNameLabels();
+      alert(`${promptingName} is focusing on you.`);
+      
+      await channel.sendMessage({
           text: JSON.stringify({
             type: "group_update",
+            from: uid,
             group: groups[data.to],
           }),
         });
-      }
-      console.log(groups);
-      updateVolumeAndBorderColor();
-      alert(`${promptingName} is focusing on you.`);
+    }
+  }
+
+  if (data.type === "unfocus" && data.to === uid) {
+    console.log(`User ${data.to} is unfocusing from ${data.from}.`);
+  
+    // Find the group the user is currently in
+    let currentGroup = groups[data.to];
+  
+    // Remove the user from this group
+    let index = currentGroup.indexOf(data.to);
+    if (index !== -1) {
+      currentGroup.splice(index, 1);
+    }
+  
+    // Update the groups for all remaining users in the group
+    for (let userId of currentGroup) {
+      groups[userId] = [...currentGroup];
+    }
+  
+    // Isolate the user
+    groups[data.to] = [data.to];
+  
+    console.log(groups);
+  
+    updateVolumeAndBorderColor();
+    updateNameLabels();
+  
+    // Send a group_update message
+    for (let userId in users) {
+      await channel.sendMessage({
+        text: JSON.stringify({
+          type: "group_update",
+          from: uid,
+          group: groups[data.to],
+        }),
+      });
     }
   }
 
   if (data.type === "group_update") {
     // Update the group information for the users in the group
-    for (let userId of data.group) {
-      groups[userId] = data.group;
+    if(data.from !== uid){
+      for (let userId of data.group) {
+        groups[userId] = data.group;
+      }
     }
     console.log(groups);
     updateVolumeAndBorderColor();
+    updateNameLabels();
+  }
+
+  if(data.type === "mute_all"){
+    hostToggleMic();
+  }
+
+  if(data.type === "unmute_all"){
+    hostToggleMic();
+  }
+
+  if(data.type === "mute_user" && data.to === uid){
+    console.log("Muting user");
+    hostToggleMic();
+  }
+
+  if(data.type === "unmute_user" && data.to === uid){
+    console.log("Unmuting user");
+    hostToggleMic();
   }
 };
 
@@ -419,14 +587,73 @@ function setBorderColor(color, userID) {
   }
 }
 
+function showButtonsIfHost() {
+  if (isHost) {
+      document.getElementById('muteAllButton').style.display = 'block';
+      document.getElementById('unmuteAllButton').style.display = 'block';
+  }
+}
+
+window.onload = function () {
+  showButtonsIfHost();
+}
+
+// initialize the AgoraRTC client, join the room and setup for the meeting
+// the user has not yet fully joined the room, their audio and video tracks have not yet been published
+// they fully join when they press the join call button
+
+let joinRoomInit = async () => {
+  rtmClient = await AgoraRTM.createInstance(APP_ID);
+  await rtmClient.login({ uid, token });
+
+  await rtmClient.addOrUpdateLocalUserAttributes({ name: userName });
+
+  channel = await rtmClient.createChannel(roomId);
+  await channel.join();
+
+  client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+  channel.on("ChannelMessage", handleChannelMessage);
+
+  await client.join(APP_ID, roomId, token, uid);
+
+  client.on("user-published", handleUserPublished);
+  client.on("user-left", handleUserLeft);
+
+  await joinStream();
+};
+
 // wait for room to be initialized
 (async () => {
   await joinRoomInit();
 })();
 
 // event listeners for the buttons
-document.getElementById("join-btn").addEventListener("click", joinStream);
 document.getElementById("camera-btn").addEventListener("click", toggleCamera);
 document.getElementById("mic-btn").addEventListener("click", toggleMic);
 document.getElementById("leave-btn").addEventListener("click", leaveStream);
+
+if(isHost){
+  document.getElementById("muteAllButton").addEventListener("click", async () => {
+    await channel.sendMessage({
+      text: JSON.stringify({
+        type: "mute_all"
+      })
+    })
+  })
+  document.getElementById("unmuteAllButton").addEventListener("click", async () => {
+    await channel.sendMessage({
+      text: JSON.stringify({
+        type: "unmute_all"
+      })
+    })
+  })
+}
+
+
 window.addEventListener("beforeunload", leaveChannel);
+
+setInterval(() => {
+  updateVolumeAndBorderColor();
+  updateNameLabels();
+}, 5000); // 5000 milliseconds = 5 seconds

@@ -4,6 +4,10 @@
   position: relative;
 }
 
+button{
+  cursor: pointer;
+}
+
 #room__container {
   position: relative;
   display: flex;
@@ -167,6 +171,26 @@
   color: #ffffff;
 }
 
+.mute-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 5px;
+  z-index: 1;
+}
+
+.focus-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 5px;
+  z-index: 1;
+}
+
 #modal {
   position: fixed;
   left: 0;
@@ -194,4 +218,26 @@
   color: white;
   padding: 5px;
   z-index: 1;
+}
+
+#muteAllButton{
+  padding: 5px;
+  background-color: #ffffff;
+  color: #000000;
+  border-radius: 5px;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -o-border-radius: 5px;
+}
+
+#unmuteAllButton{
+  padding: 5px;
+  background-color: #ffffff;
+  color: #000000;
+  border-radius: 5px;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -ms-border-radius: 5px;
+  -o-border-radius: 5px;
 }
