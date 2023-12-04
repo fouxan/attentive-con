@@ -308,6 +308,9 @@ let leaveStream = async (e) => {
   if (isHost) {
     channel.sendMessage({ text: JSON.stringify({ type: "end_meeting" }) });
   }
+
+  leaveChannel();
+  window.location = "index.html";
 };
 
 // updateVolumeAndBorderColor is called when the user joins the room and when other users join the room
