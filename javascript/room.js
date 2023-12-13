@@ -115,6 +115,7 @@ let joinStream = async () => {
       text: JSON.stringify({ type: "host_joined", hostID: uid })
     })
   }
+  alert("You may also do a manual calibration by clicking on user windows a couple of times.");
   console.log("User has joined, sending user_joined message");
 };
 
@@ -286,31 +287,58 @@ let toggleCamera = async (e) => {
 // the user's video is removed from the other user's screen
 // if host everyone gets a message saying host has ended the meeting
 let leaveStream = async (e) => {
-  if (e && typeof e.preventDefault === "function") {
-    e.preventDefault();
+  if(isHost){
+    if(confirm("Are you sure you want to end the meeting for all participants?")){
+      if (e && typeof e.preventDefault === "function") {
+        e.preventDefault();
+      }
+    
+      // document.getElementById("join-btn").style.display = "block";
+      document.getElementsByClassName("stream__actions")[0].style.display = "none";
+    
+      for (let i = 0; localTracks.length > i; i++) {
+        localTracks[i].stop();
+        localTracks[i].close();
+      }
+    
+      await client.unpublish([localTracks[0], localTracks[1]]);
+    
+      document.getElementById(`user-container-${uid}`).remove();
+    
+      channel.sendMessage({
+        text: JSON.stringify({ type: "user_left", uid: uid }),
+      });
+      if (isHost) {
+        channel.sendMessage({ text: JSON.stringify({ type: "end_meeting" }) });
+      }
+    
+      leaveChannel();
+      window.location = "index.html";
+    }
+  }else{
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
+    }
+  
+    // document.getElementById("join-btn").style.display = "block";
+    document.getElementsByClassName("stream__actions")[0].style.display = "none";
+  
+    for (let i = 0; localTracks.length > i; i++) {
+      localTracks[i].stop();
+      localTracks[i].close();
+    }
+  
+    await client.unpublish([localTracks[0], localTracks[1]]);
+  
+    document.getElementById(`user-container-${uid}`).remove();
+  
+    channel.sendMessage({
+      text: JSON.stringify({ type: "user_left", uid: uid }),
+    });
+  
+    leaveChannel();
+    window.location = "index.html";
   }
-
-  // document.getElementById("join-btn").style.display = "block";
-  document.getElementsByClassName("stream__actions")[0].style.display = "none";
-
-  for (let i = 0; localTracks.length > i; i++) {
-    localTracks[i].stop();
-    localTracks[i].close();
-  }
-
-  await client.unpublish([localTracks[0], localTracks[1]]);
-
-  document.getElementById(`user-container-${uid}`).remove();
-
-  channel.sendMessage({
-    text: JSON.stringify({ type: "user_left", uid: uid }),
-  });
-  if (isHost) {
-    channel.sendMessage({ text: JSON.stringify({ type: "end_meeting" }) });
-  }
-
-  leaveChannel();
-  window.location = "index.html";
 };
 
 // updateVolumeAndBorderColor is called when the user joins the room and when other users join the room
@@ -332,7 +360,7 @@ function updateVolumeAndBorderColor() {
         changeVolume(100, userId);
       } else {
         setBorderColor("red", userId);
-        changeVolume(20, userId);
+        changeVolume(5, userId);
       }
     }
   }
@@ -538,19 +566,23 @@ let handleChannelMessage = async (messageData) => {
   }
 
   if(data.type === "mute_all"){
+    alert("The host has muted everyone.")
     hostToggleMic();
   }
 
   if(data.type === "unmute_all"){
+    alert("The host has unmuted everyone.")
     hostToggleMic();
   }
 
   if(data.type === "mute_user" && data.to === uid){
+    alert("The host has muted you.")
     console.log("Muting user");
     hostToggleMic();
   }
 
   if(data.type === "unmute_user" && data.to === uid){
+    alert("The host has unmuted you.")
     console.log("Unmuting user");
     hostToggleMic();
   }
@@ -633,6 +665,9 @@ let joinRoomInit = async () => {
   client.on("user-published", handleUserPublished);
   client.on("user-left", handleUserLeft);
 
+  const roomLabel = document.getElementById("room-label");
+  roomLabel.textContent = roomId;
+
   await joinStream();
 };
 
@@ -645,6 +680,7 @@ let joinRoomInit = async () => {
 document.getElementById("camera-btn").addEventListener("click", toggleCamera);
 document.getElementById("mic-btn").addEventListener("click", toggleMic);
 document.getElementById("leave-btn").addEventListener("click", leaveStream);
+document.getElementById("create__room__btn").addEventListener("click", leaveStream);
 
 if(isHost){
   muteAllButton = document.getElementById("muteAllButton");

@@ -60,7 +60,7 @@ $(document).ready(function(){
         PointCalibrate++;
       }else if (CalibrationPoints[id]<10){
         //Gradually increase the opacity of calibration points when click to give some indication to user.
-        var opacity = 0.2*CalibrationPoints[id]+0.2;
+        var opacity = 0.1*CalibrationPoints[id]+0.1;
         $(this).css('opacity',opacity);
       }
 
@@ -81,7 +81,7 @@ $(document).ready(function(){
             // notification for the measurement process
             swal({
               title: "Calculating measurement",
-              text: "Please don't move your mouse & stare at the middle dot for the next 5 seconds. This will allow us to calculate the accuracy of our predictions.",
+              text: "Please place your cursor on the middle dot and don't move your mouse & stare at the middle dot for the next 5 seconds. This will allow us to calculate the accuracy of our predictions.",
               closeOnEsc: false,
               allowOutsideClick: false,
               closeModal: true
